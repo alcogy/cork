@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button, Modal, Input, Label, Textarea, ConfirmDialog } from '$lib/ui';
 	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/domain/project/types';
-	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare } from '@lucide/svelte';
+	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDate, formatDateTime } from '$lib/utils';
@@ -10,7 +10,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type Tab = 'overview' | 'kanban' | 'wbs' | 'members' | 'activity';
+	type Tab = 'overview' | 'kanban' | 'wbs' | 'members' | 'activity' | 'files';
 	let activeTab = $state<Tab>('overview');
 	let showEdit = $state(false);
 	let showAddTask = $state(false);
@@ -82,9 +82,9 @@
 
 	<!-- Tabs -->
 	<div class="tabs">
-		{#each (['overview', 'kanban', 'wbs', 'members', 'activity'] as Tab[]) as tab (tab)}
+		{#each (['overview', 'kanban', 'wbs', 'members', 'files', 'activity'] as Tab[]) as tab (tab)}
 			<button class="tab {activeTab === tab ? 'active' : ''}" onclick={() => (activeTab = tab)}>
-				{tab === 'overview' ? 'Overview' : tab === 'kanban' ? 'Kanban' : tab === 'wbs' ? 'WBS' : tab === 'members' ? `Members (${data.project.members.length})` : 'Activity'}
+				{tab === 'overview' ? 'Overview' : tab === 'kanban' ? 'Kanban' : tab === 'wbs' ? 'WBS' : tab === 'members' ? `Members (${data.project.members.length})` : tab === 'files' ? `Files (${data.files.length})` : 'Activity'}
 			</button>
 		{/each}
 	</div>
@@ -316,6 +316,38 @@
 	{/if}
 
 	<!-- Activity Tab -->
+	{#if activeTab === 'files'}
+		<div class="tab-content">
+			{#if data.isOwner}
+				<form method="POST" action="?/uploadFile" enctype="multipart/form-data" use:enhance={enh()} class="upload-form">
+					<input type="file" name="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" />
+					<Button type="submit" variant="secondary" size="sm" disabled={saving}>Upload</Button>
+				</form>
+			{/if}
+			{#if data.files.length > 0}
+				<ul class="file-list">
+					{#each data.files as file (file.id)}
+						<li class="file-item">
+							<Paperclip size={13} />
+							<span class="file-name">{file.name}</span>
+							<span class="file-size">{(file.size / 1024).toFixed(0)} KB</span>
+							{#if data.isOwner}
+								<form method="POST" action="?/deleteFile" use:enhance={enh()}>
+									<input type="hidden" name="id" value={file.id} />
+									<button type="submit" class="del-btn" aria-label="Delete file" disabled={saving}>
+										<Trash2 size={13} />
+									</button>
+								</form>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="empty">No files attached yet.</p>
+			{/if}
+		</div>
+	{/if}
+
 	{#if activeTab === 'activity'}
 		<div class="tab-content">
 			<form method="POST" action="?/logActivity" use:enhance={enh()} class="activity-form">
@@ -808,6 +840,37 @@
 	.activity-content { font-size: 0.875rem; white-space: pre-wrap; }
 
 	.empty { text-align: center; color: var(--color-text-tertiary); padding: var(--space-xl); }
+
+	.upload-form {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin-bottom: var(--space-md);
+	}
+
+	.file-input { font-size: 0.8125rem; color: var(--color-text-secondary); }
+
+	.file-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.file-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		padding: var(--space-sm) var(--space-md);
+		background: var(--color-bg-subtle);
+		border-radius: var(--radius-sm);
+		font-size: 0.8125rem;
+	}
+
+	.file-name { flex: 1; font-weight: 500; }
+	.file-size { color: var(--color-text-muted); font-size: 0.75rem; }
 
 	/* Form */
 	.form-fields { display: flex; flex-direction: column; gap: var(--space-lg); margin-bottom: var(--space-xl); }
