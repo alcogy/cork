@@ -1,6 +1,6 @@
 export const ja = {
 	app: {
-		name: 'Cork',
+		name: 'Limerick',
 		tagline: '業務管理プラットフォーム'
 	},
 	common: {

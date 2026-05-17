@@ -9,7 +9,7 @@ export const LOCALES: { value: Locale; label: string; nativeLabel: string }[] = 
 	{ value: 'ja', label: 'Japanese', nativeLabel: '日本語' }
 ];
 
-const STORAGE_KEY = 'cork_lang';
+const STORAGE_KEY = 'limerick_lang';
 
 let locale: Locale = $state('en');
 

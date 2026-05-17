@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.workflow.title} — Cork</title>
+	<title>{data.workflow.title} — Limerick</title>
 </svelte:head>
 
 <div class="page">

@@ -1,6 +1,6 @@
 export const en = {
 	app: {
-		name: 'Cork',
+		name: 'Limerick',
 		tagline: 'Business management platform'
 	},
 	common: {

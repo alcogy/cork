@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-	<title>Approvals — Cork</title>
+	<title>Approvals — Limerick</title>
 </svelte:head>
 
 <div class="page">

@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-	<title>Apps — Cork</title>
+	<title>Apps — Limerick</title>
 </svelte:head>
 
 <div class="page">
