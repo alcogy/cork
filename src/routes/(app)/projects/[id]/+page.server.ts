@@ -119,21 +119,19 @@ export const actions = {
 	},
 
 	createWbs: async ({ request, platform, params, locals }) => {
-		const data = await request.formData();
-		const start_date = data.get('start_date')?.toString();
-		const end_date = data.get('end_date')?.toString();
-		if (!start_date || !end_date) return fail(400, { error: 'Start and end dates are required' });
-
 		const db = drizzle(platform!.env.DB, { schema });
 		const project = await db.query.projects.findFirst({ where: eq(schema.projects.id, params.id) });
 		if (!project) return fail(404, { error: 'Project not found' });
+		if (!project.start_date || !project.end_date) {
+			return fail(400, { error: 'Set project start date and end date first' });
+		}
 
 		const [wbs] = await db.insert(schema.wbs).values({
 			project_id: params.id,
 			title: project.title,
 			description: '',
-			start_date,
-			end_date,
+			start_date: project.start_date,
+			end_date: project.end_date,
 			created_by: locals.user!.id
 		}).returning();
 

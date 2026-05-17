@@ -378,12 +378,12 @@
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="start_date">Start date</Label>
-					<Input id="start_date" name="start_date" type="date" value={data.project.start_date ?? ''} />
+					<Label for="start_date" required>Start date</Label>
+					<Input id="start_date" name="start_date" type="date" value={data.project.start_date ?? ''} required />
 				</div>
 				<div class="field">
-					<Label for="end_date">End date</Label>
-					<Input id="end_date" name="end_date" type="date" value={data.project.end_date ?? ''} />
+					<Label for="end_date" required>End date</Label>
+					<Input id="end_date" name="end_date" type="date" value={data.project.end_date ?? ''} required />
 				</div>
 			</div>
 		</div>
@@ -398,20 +398,19 @@
 <Modal open={showCreateWbs} title="Create WBS for this project" onclose={() => (showCreateWbs = false)}>
 	<form method="POST" action="?/createWbs" use:enhance={enh({ close: () => (showCreateWbs = false) })}>
 		<div class="form-fields">
-			<div class="field-row">
-				<div class="field">
-					<Label for="wbs_start" required>Start date</Label>
-					<Input id="wbs_start" name="start_date" type="date" value={data.project.start_date ?? ''} required />
-				</div>
-				<div class="field">
-					<Label for="wbs_end" required>End date</Label>
-					<Input id="wbs_end" name="end_date" type="date" value={data.project.end_date ?? ''} required />
-				</div>
-			</div>
+			<p class="wbs-info">
+				WBS will be created using the project's dates:<br />
+				<strong>{data.project.start_date ?? '—'} → {data.project.end_date ?? '—'}</strong>
+			</p>
+			{#if !data.project.start_date || !data.project.end_date}
+				<p class="wbs-warn">⚠ Project start date and end date must be set first.</p>
+			{/if}
 		</div>
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showCreateWbs = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Create WBS</Button>
+			<Button type="submit" variant="primary" disabled={saving || !data.project.start_date || !data.project.end_date}>
+				Create WBS
+			</Button>
 		</div>
 	</form>
 </Modal>
@@ -830,5 +829,22 @@
 		gap: var(--space-sm);
 		padding-top: var(--space-lg);
 		border-top: 1px solid var(--color-border-light);
+	}
+
+	.wbs-info {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		line-height: 1.6;
+		padding: var(--space-md);
+		background-color: var(--color-bg-sunken);
+		border-radius: var(--radius-md);
+	}
+
+	.wbs-warn {
+		font-size: 0.875rem;
+		color: var(--color-warning);
+		padding: var(--space-sm) var(--space-md);
+		background-color: var(--color-warning-light);
+		border-radius: var(--radius-md);
 	}
 </style>

@@ -43,7 +43,11 @@ export const actions = {
 	create: async ({ request, platform, locals }) => {
 		const data = await request.formData();
 		const title = data.get('title')?.toString().trim();
+		const start_date = data.get('start_date')?.toString();
+		const end_date = data.get('end_date')?.toString();
 		if (!title) return fail(400, { error: 'Project name is required' });
+		if (!start_date) return fail(400, { error: 'Start date is required' });
+		if (!end_date) return fail(400, { error: 'End date is required' });
 
 		const db = drizzle(platform!.env.DB, { schema });
 		const [project] = await db
@@ -54,8 +58,8 @@ export const actions = {
 				status_id: data.get('status_id') ? Number(data.get('status_id')) : null,
 				category_id: data.get('category_id') ? Number(data.get('category_id')) : null,
 				priority: (data.get('priority')?.toString() || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
-				start_date: data.get('start_date')?.toString() || null,
-				end_date: data.get('end_date')?.toString() || null,
+				start_date,
+				end_date,
 				created_by: locals.user!.id
 			})
 			.returning();

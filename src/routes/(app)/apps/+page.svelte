@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { Plus, Trash2, Wrench } from '@lucide/svelte';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { Plus, Trash2, Wrench, Bookmark, BookmarkCheck } from '@lucide/svelte';
+	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
 
@@ -9,6 +9,25 @@
 
 	let showEditor = $state(false);
 	let saving = $state(false);
+	let bookmarkFilter = $state(data.bookmarkOnly);
+
+	function toggleBookmarkFilter() {
+		bookmarkFilter = !bookmarkFilter;
+		const params = new URLSearchParams();
+		if (bookmarkFilter) params.set('bookmark', '1');
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
+
+	async function toggleBookmark(e: MouseEvent, appId: string, appName: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		await fetch('/api/bookmarks', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ app_id: appId, app_name: appName })
+		});
+		await invalidateAll();
+	}
 </script>
 
 <svelte:head>
@@ -21,9 +40,19 @@
 			<h1 class="page-title">Apps</h1>
 			<p class="page-subtitle">Build custom apps with no code</p>
 		</div>
-		<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-			<Plus size={14} /> New app
-		</Button>
+		<div class="header-actions">
+			<Button
+				variant={bookmarkFilter ? 'primary' : 'secondary'}
+				size="sm"
+				onclick={toggleBookmarkFilter}
+			>
+				<Bookmark size={14} />
+				{bookmarkFilter ? 'All apps' : 'Bookmarks'}
+			</Button>
+			<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
+				<Plus size={14} /> New app
+			</Button>
+		</div>
 	</div>
 
 	{#if data.apps.length > 0}
@@ -37,9 +66,23 @@
 								<div class="app-desc">{app.description}</div>
 							{/if}
 						</div>
-						<span class="app-status {app.is_published ? 'published' : 'draft'}">
-							{app.is_published ? 'Published' : 'Draft'}
-						</span>
+						<div class="app-badges">
+							<span class="app-status {app.is_published ? 'published' : 'draft'}">
+								{app.is_published ? 'Published' : 'Draft'}
+							</span>
+							<button
+								class="bookmark-btn {app.bookmarked ? 'active' : ''}"
+								onclick={(e) => toggleBookmark(e, app.id, app.name)}
+								aria-label={app.bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+								title={app.bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+							>
+								{#if app.bookmarked}
+									<BookmarkCheck size={15} />
+								{:else}
+									<Bookmark size={15} />
+								{/if}
+							</button>
+						</div>
 					</div>
 					<div class="app-stats">
 						<span>{app.field_count} field{app.field_count !== 1 ? 's' : ''}</span>
@@ -69,10 +112,16 @@
 		</div>
 	{:else}
 		<div class="empty-state">
-			<p>No apps yet. Create your first app to get started.</p>
-			<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-				<Plus size={14} /> Create an app
-			</Button>
+			{#if bookmarkFilter}
+				<Bookmark size={32} />
+				<p>No bookmarked apps.</p>
+				<Button variant="secondary" size="sm" onclick={toggleBookmarkFilter}>Show all apps</Button>
+			{:else}
+				<p>No apps yet. Create your first app to get started.</p>
+				<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
+					<Plus size={14} /> Create an app
+				</Button>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -80,7 +129,7 @@
 <Modal open={showEditor} title="New app" onclose={() => (showEditor = false)}>
 	<form method="POST" action="?/create" use:enhance={() => {
 		saving = true;
-		return async ({ result, update }) => {
+		return async ({ update }) => {
 			await update();
 			await invalidateAll();
 			showEditor = false;
@@ -116,6 +165,8 @@
 	.page-title { font-size: 1.5rem; font-weight: 700; }
 	.page-subtitle { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 4px; }
 
+	.header-actions { display: flex; gap: var(--space-sm); align-items: center; }
+
 	.apps-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -130,6 +181,9 @@
 		background-color: var(--color-bg-elevated);
 		border: 1px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
+		transition: border-color var(--transition-fast);
+
+		&:hover { border-color: var(--color-border); }
 	}
 
 	.app-header {
@@ -139,19 +193,37 @@
 		gap: var(--space-sm);
 	}
 
+	.app-info { flex: 1; min-width: 0; }
 	.app-name { font-weight: 600; }
-	.app-desc { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: 2px; }
+	.app-desc { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+	.app-badges { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
 
 	.app-status {
 		padding: 2px var(--space-sm);
 		border-radius: var(--radius-sm);
 		font-size: 0.75rem;
 		font-weight: 500;
-		white-space: nowrap;
-		flex-shrink: 0;
 
 		&.published { background-color: var(--color-success-light); color: var(--color-success); }
 		&.draft { background-color: var(--color-bg-sunken); color: var(--color-text-secondary); }
+	}
+
+	.bookmark-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border: none;
+		background: none;
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-sm);
+		transition: all var(--transition-fast);
+
+		&:hover { color: var(--color-primary); }
+		&.active { color: var(--color-primary); }
 	}
 
 	.app-stats {
@@ -161,12 +233,7 @@
 		color: var(--color-text-secondary);
 	}
 
-	.app-actions {
-		display: flex;
-		align-items: center;
-		gap: var(--space-xs);
-	}
-
+	.app-actions { display: flex; align-items: center; gap: var(--space-xs); }
 	.btn-link { text-decoration: none; }
 
 	.delete-btn {

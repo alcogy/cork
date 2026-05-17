@@ -160,12 +160,12 @@
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="start_date">Start date</Label>
-					<Input id="start_date" name="start_date" type="date" />
+					<Label for="start_date" required>Start date</Label>
+					<Input id="start_date" name="start_date" type="date" required />
 				</div>
 				<div class="field">
-					<Label for="end_date">End date</Label>
-					<Input id="end_date" name="end_date" type="date" />
+					<Label for="end_date" required>End date</Label>
+					<Input id="end_date" name="end_date" type="date" required />
 				</div>
 			</div>
 		</div>

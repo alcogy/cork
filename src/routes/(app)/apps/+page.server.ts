@@ -5,14 +5,27 @@ import { count, desc, eq, sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
 
-export const load: PageServerLoad = async ({ platform }) => {
+export const load: PageServerLoad = async ({ platform, locals, url }) => {
 	const db = drizzle(platform!.env.DB, { schema });
 
-	const appsList = await db.select().from(schema.apps).orderBy(desc(schema.apps.updated_at));
+	const bookmarkOnly = url.searchParams.get('bookmark') === '1';
+
+	const [appsList, userBookmarks] = await Promise.all([
+		db.select().from(schema.apps).orderBy(desc(schema.apps.updated_at)),
+		db.select({ app_id: schema.app_bookmarks.app_id })
+			.from(schema.app_bookmarks)
+			.where(eq(schema.app_bookmarks.account_id, locals.user!.id))
+	]);
+
+	const bookmarkedIds = new Set(userBookmarks.map((b) => b.app_id));
+
+	const filtered = bookmarkOnly
+		? appsList.filter((a) => bookmarkedIds.has(a.id))
+		: appsList;
 
 	const recordCounts: Record<string, number> = {};
-	if (appsList.length > 0) {
-		const ids = appsList.map((a) => a.id);
+	if (filtered.length > 0) {
+		const ids = filtered.map((a) => a.id);
 		const rows = await db
 			.select({ app_id: schema.app_records.app_id, count: count() })
 			.from(schema.app_records)
@@ -22,11 +35,13 @@ export const load: PageServerLoad = async ({ platform }) => {
 	}
 
 	return {
-		apps: appsList.map((a) => ({
+		apps: filtered.map((a) => ({
 			...a,
 			field_count: (JSON.parse(a.fields) as unknown[]).length,
-			record_count: recordCounts[a.id] ?? 0
-		}))
+			record_count: recordCounts[a.id] ?? 0,
+			bookmarked: bookmarkedIds.has(a.id)
+		})),
+		bookmarkOnly
 	};
 };
 
@@ -39,10 +54,7 @@ export const actions = {
 		const db = drizzle(platform!.env.DB, { schema });
 		const [app] = await db
 			.insert(schema.apps)
-			.values({
-				name,
-				description: data.get('description')?.toString().trim() || ''
-			})
+			.values({ name, description: data.get('description')?.toString().trim() || '' })
 			.returning();
 
 		await writeAuditLog({

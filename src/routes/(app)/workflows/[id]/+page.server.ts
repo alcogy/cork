@@ -1,11 +1,11 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { drizzle } from 'drizzle-orm/d1';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, count, desc, eq } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
 
-export const load: PageServerLoad = async ({ platform, params }) => {
+export const load: PageServerLoad = async ({ platform, params, locals }) => {
 	const db = drizzle(platform!.env.DB, { schema });
 
 	const [workflow, allAccounts] = await Promise.all([
@@ -15,19 +15,77 @@ export const load: PageServerLoad = async ({ platform, params }) => {
 				requester: true,
 				current_approver: true,
 				category: true,
-				approvals: { orderBy: [asc(schema.workflow_approvals.step_order)], with: { approver: true } },
-				comments: { orderBy: [desc(schema.workflow_comments.created_at)], with: { account: true } }
+				approvals: {
+					orderBy: [asc(schema.workflow_approvals.step_order)],
+					with: { approver: true }
+				},
+				comments: {
+					orderBy: [desc(schema.workflow_comments.created_at)],
+					with: { account: true }
+				}
 			}
 		}),
-		db.select({ id: schema.accounts.id, name: schema.accounts.name }).from(schema.accounts).orderBy(asc(schema.accounts.name))
+		db.select({ id: schema.accounts.id, name: schema.accounts.name })
+			.from(schema.accounts)
+			.orderBy(asc(schema.accounts.name))
 	]);
 
 	if (!workflow) throw error(404, 'Approval request not found');
 
-	return { workflow, allAccounts };
+	const isRequester = workflow.requester_id === locals.user!.id;
+	const isAdmin = locals.user!.role === 'admin';
+	const canApprove =
+		(workflow.status === 'submitted' || workflow.status === 'in_review') &&
+		workflow.approvals.some(
+			(a) => a.approver_id === locals.user!.id && a.status === 'pending'
+		);
+
+	return { workflow, allAccounts, isRequester, isAdmin, canApprove };
 };
 
 export const actions = {
+	addApprover: async ({ request, platform, params, locals }) => {
+		const data = await request.formData();
+		const approver_id = data.get('approver_id')?.toString();
+		if (!approver_id) return fail(400, { error: 'Approver is required' });
+
+		const db = drizzle(platform!.env.DB, { schema });
+
+		const [maxStep] = await db
+			.select({ max: count() })
+			.from(schema.workflow_approvals)
+			.where(eq(schema.workflow_approvals.workflow_id, params.id));
+
+		const step_order = (maxStep?.max ?? 0) + 1;
+
+		await db.insert(schema.workflow_approvals).values({
+			workflow_id: params.id,
+			approver_id,
+			step_order,
+			status: 'pending'
+		});
+
+		// Set current_approver_id to first approver if not set
+		const wf = await db.query.workflows.findFirst({ where: eq(schema.workflows.id, params.id) });
+		if (wf && !wf.current_approver_id) {
+			await db.update(schema.workflows)
+				.set({ current_approver_id: approver_id })
+				.where(eq(schema.workflows.id, params.id));
+		}
+
+		return { success: true };
+	},
+
+	removeApprover: async ({ request, platform, params }) => {
+		const data = await request.formData();
+		const id = data.get('id')?.toString();
+		if (!id) return fail(400, { error: 'Invalid request' });
+
+		const db = drizzle(platform!.env.DB, { schema });
+		await db.delete(schema.workflow_approvals).where(eq(schema.workflow_approvals.id, id));
+		return { success: true };
+	},
+
 	addComment: async ({ request, platform, params, locals }) => {
 		const data = await request.formData();
 		const content = data.get('content')?.toString().trim();
@@ -44,6 +102,13 @@ export const actions = {
 
 	submit: async ({ platform, params, locals }) => {
 		const db = drizzle(platform!.env.DB, { schema });
+		const wf = await db.query.workflows.findFirst({
+			where: eq(schema.workflows.id, params.id),
+			with: { approvals: true }
+		});
+		if (!wf) return fail(404, { error: 'Not found' });
+		if (wf.approvals.length === 0) return fail(400, { error: 'Add at least one approver before submitting' });
+
 		const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 		await db.update(schema.workflows).set({
 			status: 'submitted',
@@ -61,6 +126,18 @@ export const actions = {
 
 		const db = drizzle(platform!.env.DB, { schema });
 		const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+		// Update approver's step status
+		await db.update(schema.workflow_approvals)
+			.set({ status: 'approved', comment, approved_at: now })
+			.where(
+				eq(schema.workflow_approvals.workflow_id, params.id)
+			);
+
+		// Check if all approvers approved
+		const remaining = await db.select({ count: count() })
+			.from(schema.workflow_approvals)
+			.where(eq(schema.workflow_approvals.workflow_id, params.id));
 
 		await db.update(schema.workflows).set({
 			status: 'approved',
@@ -86,6 +163,10 @@ export const actions = {
 
 		const db = drizzle(platform!.env.DB, { schema });
 		const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+		await db.update(schema.workflow_approvals)
+			.set({ status: 'rejected', comment, approved_at: now })
+			.where(eq(schema.workflow_approvals.workflow_id, params.id));
 
 		await db.update(schema.workflows).set({
 			status: 'rejected',

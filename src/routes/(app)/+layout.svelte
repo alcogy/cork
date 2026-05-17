@@ -6,7 +6,6 @@
 	import {
 		LayoutDashboard,
 		Users,
-		CalendarDays,
 		FolderKanban,
 		CheckSquare,
 		AppWindow,
@@ -23,7 +22,6 @@
 	const primaryNavItems: NavItem[] = [
 		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
 		{ href: '/customers', label: 'Customers', icon: Users },
-		{ href: '/schedules', label: 'Schedules', icon: CalendarDays },
 		{ href: '/projects', label: 'Projects', icon: FolderKanban },
 		{ href: '/workflows', label: 'Approvals', icon: CheckSquare },
 		{ href: '/apps', label: 'Apps', icon: AppWindow },
