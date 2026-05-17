@@ -5,6 +5,7 @@
 	import { Plus, Download } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -15,14 +16,14 @@
 	let editingCustomer = $state<(typeof data.customers)[0] | null>(null);
 	let saving = $state(false);
 
-	const columns = [
-		{ key: 'name', label: 'Company name' },
-		{ key: 'email', label: 'Email' },
-		{ key: 'tel', label: 'Phone' },
-		{ key: 'address', label: 'Address' },
-		{ key: 'note_count', label: 'Notes', width: '80px' },
-		{ key: 'status', label: 'Status', width: '100px' }
-	];
+	const columns = $derived([
+		{ key: 'name', label: t().customer.name },
+		{ key: 'email', label: t().customer.email },
+		{ key: 'tel', label: t().customer.tel },
+		{ key: 'address', label: t().customer.address },
+		{ key: 'note_count', label: t().customer.notes, width: '80px' },
+		{ key: 'status', label: t().customer.status, width: '100px' }
+	]);
 
 	function navigate(overrides: Record<string, string> = {}) {
 		const params = new URLSearchParams();
@@ -58,17 +59,17 @@
 </script>
 
 <svelte:head>
-	<title>Customers — Cork</title>
+	<title>{t().customer.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">Customers</h1>
+		<h1 class="page-title">{t().customer.title}</h1>
 		<div class="page-actions">
 			<a href={getExportUrl()} class="btn-link">
-				<Button variant="secondary" size="sm"><Download size={14} /> Export CSV</Button>
+				<Button variant="secondary" size="sm"><Download size={14} /> {t().customer.exportCsv}</Button>
 			</a>
-			<Button variant="primary" size="sm" onclick={openCreate}><Plus size={14} /> New customer</Button>
+			<Button variant="primary" size="sm" onclick={openCreate}><Plus size={14} /> {t().customer.new}</Button>
 		</div>
 	</div>
 
@@ -84,7 +85,7 @@
 			onchange={() => navigate()}
 			aria-label="Filter by status"
 		>
-			<option value="all">All statuses</option>
+			<option value="all">{t().common.all}</option>
 			{#each CUSTOMER_STATUSES as s (s)}
 				<option value={s}>{CUSTOMER_STATUS_LABELS[s]}</option>
 			{/each}
@@ -117,13 +118,13 @@
 		/>
 	{/if}
 
-	<p class="total-count">{data.total} {data.total === 1 ? 'customer' : 'customers'} total</p>
+	<p class="total-count">{t().common.total}: {data.total}</p>
 </div>
 
 <!-- Customer Editor Modal -->
 <Modal
 	open={showEditor}
-	title={editingCustomer ? 'Edit customer' : 'New customer'}
+	title={editingCustomer ? t().customer.edit : t().customer.new}
 	onclose={() => (showEditor = false)}
 >
 	<form
@@ -145,31 +146,31 @@
 
 		<div class="form-grid">
 			<div class="field full">
-				<Label for="name" required>Company name</Label>
+				<Label for="name" required>{t().customer.name}</Label>
 				<Input id="name" name="name" value={editingCustomer?.name ?? ''} required />
 			</div>
 			<div class="field">
-				<Label for="email">Email</Label>
+				<Label for="email">{t().customer.email}</Label>
 				<Input id="email" name="email" type="email" value={editingCustomer?.email ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="tel">Phone</Label>
+				<Label for="tel">{t().customer.tel}</Label>
 				<Input id="tel" name="tel" value={editingCustomer?.tel ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="fax">Fax</Label>
+				<Label for="fax">{t().customer.fax}</Label>
 				<Input id="fax" name="fax" value={editingCustomer?.fax ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="zipcode">Zip / Postal code</Label>
+				<Label for="zipcode">{t().customer.zipcode}</Label>
 				<Input id="zipcode" name="zipcode" value={editingCustomer?.zipcode ?? ''} />
 			</div>
 			<div class="field full">
-				<Label for="address">Address</Label>
+				<Label for="address">{t().customer.address}</Label>
 				<Input id="address" name="address" value={editingCustomer?.address ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="status">Status</Label>
+				<Label for="status">{t().customer.status}</Label>
 				<select id="status" name="status" class="select-input">
 					{#each CUSTOMER_STATUSES as s (s)}
 						<option value={s} selected={editingCustomer?.status === s}>{CUSTOMER_STATUS_LABELS[s]}</option>
@@ -179,9 +180,9 @@
 		</div>
 
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>Cancel</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>{t().common.cancel}</Button>
 			<Button type="submit" variant="primary" disabled={saving}>
-				{saving ? 'Saving...' : editingCustomer ? 'Save changes' : 'Create'}
+				{saving ? t().common.loading : editingCustomer ? t().common.save : t().common.create}
 			</Button>
 		</div>
 	</form>

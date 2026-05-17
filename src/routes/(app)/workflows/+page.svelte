@@ -6,6 +6,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { formatDate } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -31,20 +32,20 @@
 </script>
 
 <svelte:head>
-	<title>Approvals — Cork</title>
+	<title>{t().workflow.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">Approvals</h1>
+		<h1 class="page-title">{t().workflow.title}</h1>
 		<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-			<Plus size={14} /> New request
+			<Plus size={14} /> {t().workflow.new}
 		</Button>
 	</div>
 
 	<div class="filters">
 		<select class="status-select" bind:value={statusFilter} onchange={navigate} aria-label="Filter by status">
-			<option value="all">All statuses</option>
+			<option value="all">{t().common.all}</option>
 			{#each WORKFLOW_STATUSES as s (s)}
 				<option value={s}>{WORKFLOW_STATUS_LABELS[s]}</option>
 			{/each}
@@ -78,7 +79,7 @@
 	{/if}
 </div>
 
-<Modal open={showEditor} title="New approval request" onclose={() => (showEditor = false)}>
+<Modal open={showEditor} title={t().workflow.new} onclose={() => (showEditor = false)}>
 	<form method="POST" action="?/create" use:enhance={() => {
 		saving = true;
 		return async ({ update }) => {
@@ -90,15 +91,15 @@
 	}}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="title" required>Title</Label>
+				<Label for="title" required>{t().workflow.requestTitle}</Label>
 				<Input id="title" name="title" required />
 			</div>
 			<div class="field">
-				<Label for="description">Description</Label>
+				<Label for="description">{t().workflow.description}</Label>
 				<Textarea id="description" name="description" rows={3} />
 			</div>
 			<div class="field">
-				<Label for="priority">Priority</Label>
+				<Label for="priority">{t().workflow.priority}</Label>
 				<select id="priority" name="priority" class="select-input">
 					{#each WORKFLOW_PRIORITIES as p (p)}
 						<option value={p} selected={p === 'normal'}>{WORKFLOW_PRIORITY_LABELS[p]}</option>
@@ -107,8 +108,8 @@
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Create request</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().workflow.new}</Button>
 		</div>
 	</form>
 </Modal>

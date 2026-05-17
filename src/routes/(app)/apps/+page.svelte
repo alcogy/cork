@@ -3,6 +3,7 @@
 	import { Plus, Trash2, Wrench, Bookmark, BookmarkCheck } from '@lucide/svelte';
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -31,14 +32,14 @@
 </script>
 
 <svelte:head>
-	<title>Apps — Cork</title>
+	<title>{t().apps.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
 		<div>
-			<h1 class="page-title">Apps</h1>
-			<p class="page-subtitle">Build custom apps with no code</p>
+			<h1 class="page-title">{t().apps.title}</h1>
+			<p class="page-subtitle">{t().app.tagline}</p>
 		</div>
 		<div class="header-actions">
 			<Button
@@ -47,10 +48,10 @@
 				onclick={toggleBookmarkFilter}
 			>
 				<Bookmark size={14} />
-				{bookmarkFilter ? 'All apps' : 'Bookmarks'}
+				{bookmarkFilter ? t().apps.title : t().common.filter}
 			</Button>
 			<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-				<Plus size={14} /> New app
+				<Plus size={14} /> {t().apps.new}
 			</Button>
 		</div>
 	</div>
@@ -68,7 +69,7 @@
 						</div>
 						<div class="app-badges">
 							<span class="app-status {app.is_published ? 'published' : 'draft'}">
-								{app.is_published ? 'Published' : 'Draft'}
+								{app.is_published ? t().apps.published : t().apps.draft}
 							</span>
 							<button
 								class="bookmark-btn {app.bookmarked ? 'active' : ''}"
@@ -91,10 +92,10 @@
 					</div>
 					<div class="app-actions">
 						<a href="/apps/{app.id}" class="btn-link">
-							<Button variant="secondary" size="sm">View records</Button>
+							<Button variant="secondary" size="sm">{t().apps.records}</Button>
 						</a>
 						<a href="/apps/{app.id}/build" class="btn-link">
-							<Button variant="ghost" size="sm"><Wrench size={14} /> Build</Button>
+							<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
 						</a>
 						<form
 							method="POST"
@@ -126,7 +127,7 @@
 	{/if}
 </div>
 
-<Modal open={showEditor} title="New app" onclose={() => (showEditor = false)}>
+<Modal open={showEditor} title={t().apps.new} onclose={() => (showEditor = false)}>
 	<form method="POST" action="?/create" use:enhance={() => {
 		saving = true;
 		return async ({ update }) => {
@@ -138,17 +139,17 @@
 	}}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="name" required>App name</Label>
+				<Label for="name" required>{t().apps.name}</Label>
 				<Input id="name" name="name" required />
 			</div>
 			<div class="field">
-				<Label for="description">Description</Label>
+				<Label for="description">{t().apps.description}</Label>
 				<Textarea id="description" name="description" rows={2} />
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Create</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.create}</Button>
 		</div>
 	</form>
 </Modal>

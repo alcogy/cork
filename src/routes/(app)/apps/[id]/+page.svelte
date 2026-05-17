@@ -5,6 +5,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDateTime } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -33,7 +34,7 @@
 
 <div class="page">
 	<div class="breadcrumb">
-		<a href="/apps" class="back-link"><ArrowLeft size={16} /> Apps</a>
+		<a href="/apps" class="back-link"><ArrowLeft size={16} /> {t().apps.title}</a>
 	</div>
 
 	<div class="app-header">
@@ -45,34 +46,34 @@
 		</div>
 		<div class="header-actions">
 			<span class="status-badge {data.app.is_published ? 'published' : 'draft'}">
-				{data.app.is_published ? 'Published' : 'Draft'}
+				{data.app.is_published ? t().apps.published : t().apps.draft}
 			</span>
 			<form method="POST" action="?/togglePublish" use:enhance={enh()}>
 				<Button type="submit" variant="secondary" size="sm">
-					{data.app.is_published ? 'Unpublish' : 'Publish'}
+					{data.app.is_published ? t().apps.unpublish : t().apps.publish}
 				</Button>
 			</form>
 			<a href="/apps/{data.app.id}/build" class="btn-link">
-				<Button variant="ghost" size="sm"><Wrench size={14} /> Build</Button>
+				<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
 			</a>
 			<Button variant="primary" size="sm" onclick={() => (showForm = true)}>
-				<Plus size={14} /> New record
+				<Plus size={14} /> {t().apps.newRecord}
 			</Button>
 		</div>
 	</div>
 
 	{#if data.app.fieldsParsed.length === 0}
 		<div class="empty-state">
-			<p>No fields defined yet.</p>
+			<p>{t().apps.noFields}</p>
 			<a href="/apps/{data.app.id}/build" class="btn-link">
 				<Button variant="primary" size="sm"><Wrench size={14} /> Go to Build</Button>
 			</a>
 		</div>
 	{:else if data.records.length === 0}
 		<div class="empty-state">
-			<p>No records yet.</p>
+			<p>{t().common.noResults}</p>
 			<Button variant="primary" size="sm" onclick={() => (showForm = true)}>
-				<Plus size={14} /> Create first record
+				<Plus size={14} /> {t().apps.newRecord}
 			</Button>
 		</div>
 	{:else}
@@ -83,7 +84,7 @@
 						{#each listFields as field (field.id)}
 							<th>{field.label}</th>
 						{/each}
-						<th class="th-date">Created</th>
+						<th class="th-date">{t().common.createdAt}</th>
 						<th class="th-action"></th>
 					</tr>
 				</thead>
@@ -111,7 +112,7 @@
 </div>
 
 <!-- New Record Modal -->
-<Modal open={showForm} title="New record — {data.app.name}" onclose={() => (showForm = false)}>
+<Modal open={showForm} title="{t().apps.newRecord} — {data.app.name}" onclose={() => (showForm = false)}>
 	<form method="POST" action="?/create" use:enhance={enh(() => (showForm = false))}>
 		<div class="form-fields">
 			{#each data.app.fieldsParsed as field (field.id)}

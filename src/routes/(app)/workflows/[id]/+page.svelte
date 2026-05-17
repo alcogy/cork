@@ -5,6 +5,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDate, formatDateTime } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -56,7 +57,7 @@
 
 <div class="page">
 	<div class="breadcrumb">
-		<a href="/workflows" class="back-link"><ArrowLeft size={16} /> Approvals</a>
+		<a href="/workflows" class="back-link"><ArrowLeft size={16} /> {t().workflow.title}</a>
 	</div>
 
 	<div class="workflow-header">
@@ -153,7 +154,7 @@
 				<div class="submit-section">
 					<form method="POST" action="?/submit" use:enhance={enh()}>
 						<Button type="submit" variant="primary" disabled={saving}>
-							Submit for approval
+							{t().workflow.submit}
 						</Button>
 					</form>
 				</div>
@@ -167,13 +168,13 @@
 						<form method="POST" action="?/approve" use:enhance={enh()} class="action-form">
 							<Textarea name="comment" placeholder="Comment (optional)" rows={2} />
 							<Button type="submit" variant="primary" disabled={saving}>
-								<CheckCircle size={16} /> Approve
+								<CheckCircle size={16} /> {t().workflow.approve}
 							</Button>
 						</form>
 						<form method="POST" action="?/reject" use:enhance={enh()} class="action-form">
 							<Textarea name="comment" placeholder="Reason for rejection (optional)" rows={2} />
 							<Button type="submit" variant="danger" disabled={saving}>
-								<XCircle size={16} /> Reject
+								<XCircle size={16} /> {t().workflow.reject}
 							</Button>
 						</form>
 					</div>
@@ -212,23 +213,23 @@
 			<div class="meta-card">
 				<dl class="meta-list">
 					<div class="meta-row">
-						<dt>Priority</dt>
+						<dt>{t().workflow.priority}</dt>
 						<dd>{WORKFLOW_PRIORITY_LABELS[wf.priority]}</dd>
 					</div>
 					{#if wf.category}
 						<div class="meta-row">
-							<dt>Category</dt>
+							<dt>{t().workflow.category}</dt>
 							<dd>{wf.category.label}</dd>
 						</div>
 					{/if}
 					{#if wf.amount !== null}
 						<div class="meta-row">
-							<dt>Amount</dt>
+							<dt>{t().workflow.amount}</dt>
 							<dd>{wf.amount.toLocaleString()}</dd>
 						</div>
 					{/if}
 					<div class="meta-row">
-						<dt>Requester</dt>
+						<dt>{t().workflow.requester}</dt>
 						<dd>{wf.requester?.name ?? '—'}</dd>
 					</div>
 					{#if wf.submitted_at}

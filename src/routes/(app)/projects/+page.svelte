@@ -6,6 +6,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { formatDate } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -31,14 +32,14 @@
 </script>
 
 <svelte:head>
-	<title>Projects — Cork</title>
+	<title>{t().project.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">Projects</h1>
+		<h1 class="page-title">{t().project.title}</h1>
 		<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-			<Plus size={14} /> New project
+			<Plus size={14} /> {t().project.new}
 		</Button>
 	</div>
 
@@ -99,9 +100,9 @@
 		</div>
 	{:else}
 		<div class="empty-state">
-			<p>No projects yet.</p>
+			<p>{t().common.noResults}</p>
 			<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-				<Plus size={14} /> Create your first project
+				<Plus size={14} /> {t().project.new}
 			</Button>
 		</div>
 	{/if}
@@ -116,7 +117,7 @@
 </div>
 
 <!-- Create Project Modal -->
-<Modal open={showEditor} title="New project" onclose={() => (showEditor = false)}>
+<Modal open={showEditor} title={t().project.new} onclose={() => (showEditor = false)}>
 	<form
 		method="POST"
 		action="?/create"
@@ -132,25 +133,25 @@
 	>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="title" required>Project name</Label>
+				<Label for="title" required>{t().project.name}</Label>
 				<Input id="title" name="title" required />
 			</div>
 			<div class="field">
-				<Label for="description">Description</Label>
+				<Label for="description">{t().project.description}</Label>
 				<Textarea id="description" name="description" rows={3} />
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="status_id">Status</Label>
+					<Label for="status_id">{t().project.status}</Label>
 					<select id="status_id" name="status_id" class="select-input">
-						<option value="">— None —</option>
+						<option value="">— {t().common.none} —</option>
 						{#each data.statuses as s (s.id)}
 							<option value={s.id}>{s.label}</option>
 						{/each}
 					</select>
 				</div>
 				<div class="field">
-					<Label for="priority">Priority</Label>
+					<Label for="priority">{t().project.priority}</Label>
 					<select id="priority" name="priority" class="select-input">
 						{#each PROJECT_PRIORITIES as p (p)}
 							<option value={p} selected={p === 'medium'}>{PROJECT_PRIORITY_LABELS[p]}</option>
@@ -160,18 +161,18 @@
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="start_date" required>Start date</Label>
+					<Label for="start_date" required>{t().project.startDate}</Label>
 					<Input id="start_date" name="start_date" type="date" required />
 				</div>
 				<div class="field">
-					<Label for="end_date" required>End date</Label>
+					<Label for="end_date" required>{t().project.endDate}</Label>
 					<Input id="end_date" name="end_date" type="date" required />
 				</div>
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Create project</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEditor = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().project.new}</Button>
 		</div>
 	</form>
 </Modal>

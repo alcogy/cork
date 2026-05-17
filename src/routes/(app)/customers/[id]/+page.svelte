@@ -11,6 +11,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDateTime, formatDate } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -58,7 +59,7 @@
 
 <div class="page">
 	<div class="breadcrumb">
-		<a href="/customers" class="back-link"><ArrowLeft size={16} /> Customers</a>
+		<a href="/customers" class="back-link"><ArrowLeft size={16} /> {t().customer.title}</a>
 	</div>
 
 	<div class="customer-header">
@@ -68,21 +69,21 @@
 				{CUSTOMER_STATUS_LABELS[data.customer.status]}
 			</span>
 		</div>
-		<Button variant="secondary" size="sm" onclick={() => (showEditCustomer = true)}>Edit</Button>
+		<Button variant="secondary" size="sm" onclick={() => (showEditCustomer = true)}>{t().common.edit}</Button>
 	</div>
 
 	<div class="meta-grid">
 		{#if data.customer.email}
-			<div class="meta-item"><span class="meta-label">Email</span><span>{data.customer.email}</span></div>
+			<div class="meta-item"><span class="meta-label">{t().customer.email}</span><span>{data.customer.email}</span></div>
 		{/if}
 		{#if data.customer.tel}
-			<div class="meta-item"><span class="meta-label">Phone</span><span>{data.customer.tel}</span></div>
+			<div class="meta-item"><span class="meta-label">{t().customer.tel}</span><span>{data.customer.tel}</span></div>
 		{/if}
 		{#if data.customer.fax}
-			<div class="meta-item"><span class="meta-label">Fax</span><span>{data.customer.fax}</span></div>
+			<div class="meta-item"><span class="meta-label">{t().customer.fax}</span><span>{data.customer.fax}</span></div>
 		{/if}
 		{#if data.customer.address}
-			<div class="meta-item"><span class="meta-label">Address</span><span>{data.customer.address}</span></div>
+			<div class="meta-item"><span class="meta-label">{t().customer.address}</span><span>{data.customer.address}</span></div>
 		{/if}
 	</div>
 
@@ -106,9 +107,9 @@
 	{#if activeTab === 'activities'}
 		<div class="tab-content">
 			<div class="tab-header">
-				<h2>Activities</h2>
+				<h2>{t().customer.activities}</h2>
 				<Button variant="primary" size="sm" onclick={() => (showAddActivity = true)}>
-					<Plus size={14} /> Log activity
+					<Plus size={14} /> {t().customer.addActivity}
 				</Button>
 			</div>
 			{#if data.customer.activities.length > 0}
@@ -137,7 +138,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No activities logged yet.</p>
+				<p class="empty">{t().common.noResults}</p>
 			{/if}
 		</div>
 	{/if}
@@ -146,9 +147,9 @@
 	{#if activeTab === 'schedules'}
 		<div class="tab-content">
 			<div class="tab-header">
-				<h2>Schedules</h2>
+				<h2>{t().customer.schedules}</h2>
 				<Button variant="primary" size="sm" onclick={() => (showAddSchedule = true)}>
-					<Plus size={14} /> Add schedule
+					<Plus size={14} /> {t().customer.addSchedule}
 				</Button>
 			</div>
 			{#if data.customer.schedules.length > 0}
@@ -171,7 +172,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No schedules yet.</p>
+				<p class="empty">{t().common.noResults}</p>
 			{/if}
 		</div>
 	{/if}
@@ -180,9 +181,9 @@
 	{#if activeTab === 'notes'}
 		<div class="tab-content">
 			<div class="tab-header">
-				<h2>Notes</h2>
+				<h2>{t().customer.notes}</h2>
 				<Button variant="primary" size="sm" onclick={() => (showAddNote = true)}>
-					<Plus size={14} /> Add note
+					<Plus size={14} /> {t().customer.addNote}
 				</Button>
 			</div>
 			{#if data.customer.notes.length > 0}
@@ -203,7 +204,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No notes yet.</p>
+				<p class="empty">{t().common.noResults}</p>
 			{/if}
 		</div>
 	{/if}
@@ -212,9 +213,9 @@
 	{#if activeTab === 'contacts'}
 		<div class="tab-content">
 			<div class="tab-header">
-				<h2>Contacts</h2>
+				<h2>{t().customer.contacts}</h2>
 				<Button variant="primary" size="sm" onclick={() => (showAddContact = true)}>
-					<Plus size={14} /> Add contact
+					<Plus size={14} /> {t().customer.addContact}
 				</Button>
 			</div>
 			{#if data.customer.contacts.length > 0}
@@ -243,42 +244,42 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No contacts yet.</p>
+				<p class="empty">{t().common.noResults}</p>
 			{/if}
 		</div>
 	{/if}
 </div>
 
 <!-- Edit Customer Modal -->
-<Modal open={showEditCustomer} title="Edit customer" onclose={() => (showEditCustomer = false)}>
+<Modal open={showEditCustomer} title={t().customer.edit} onclose={() => (showEditCustomer = false)}>
 	<form method="POST" action="?/updateCustomer" use:enhance={withInvalidate('updateCustomer')}>
 		<div class="form-grid">
 			<div class="field full">
-				<Label for="edit-name" required>Company name</Label>
+				<Label for="edit-name" required>{t().customer.name}</Label>
 				<Input id="edit-name" name="name" value={data.customer.name} required />
 			</div>
 			<div class="field">
-				<Label for="edit-email">Email</Label>
+				<Label for="edit-email">{t().customer.email}</Label>
 				<Input id="edit-email" name="email" type="email" value={data.customer.email ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="edit-tel">Phone</Label>
+				<Label for="edit-tel">{t().customer.tel}</Label>
 				<Input id="edit-tel" name="tel" value={data.customer.tel ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="edit-fax">Fax</Label>
+				<Label for="edit-fax">{t().customer.fax}</Label>
 				<Input id="edit-fax" name="fax" value={data.customer.fax ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="edit-zipcode">Zip / Postal code</Label>
+				<Label for="edit-zipcode">{t().customer.zipcode}</Label>
 				<Input id="edit-zipcode" name="zipcode" value={data.customer.zipcode ?? ''} />
 			</div>
 			<div class="field full">
-				<Label for="edit-address">Address</Label>
+				<Label for="edit-address">{t().customer.address}</Label>
 				<Input id="edit-address" name="address" value={data.customer.address ?? ''} />
 			</div>
 			<div class="field">
-				<Label for="edit-status">Status</Label>
+				<Label for="edit-status">{t().customer.status}</Label>
 				<select id="edit-status" name="status" class="select-input">
 					{#each CUSTOMER_STATUSES as s (s)}
 						<option value={s} selected={data.customer.status === s}>{CUSTOMER_STATUS_LABELS[s]}</option>
@@ -287,74 +288,74 @@
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEditCustomer = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Save changes</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEditCustomer = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.save}</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Add Activity Modal -->
-<Modal open={showAddActivity} title="Log activity" onclose={() => (showAddActivity = false)}>
+<Modal open={showAddActivity} title={t().customer.addActivity} onclose={() => (showAddActivity = false)}>
 	<form method="POST" action="?/createActivity" use:enhance={withInvalidate('createActivity')}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="act-type" required>Type</Label>
+				<Label for="act-type" required>{t().customer.activities}</Label>
 				<select id="act-type" name="type" class="select-input" required>
-					{#each ACTIVITY_TYPES as t (t)}
-						<option value={t}>{ACTIVITY_TYPE_LABELS[t]}</option>
+					{#each ACTIVITY_TYPES as aType (aType)}
+						<option value={aType}>{ACTIVITY_TYPE_LABELS[aType]}</option>
 					{/each}
 				</select>
 			</div>
 			<div class="field">
-				<Label for="act-note">Note</Label>
+				<Label for="act-note">{t().customer.notes}</Label>
 				<Textarea id="act-note" name="note" rows={3} />
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddActivity = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Log</Button>
+			<Button type="button" variant="secondary" onclick={() => (showAddActivity = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.add}</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Add Schedule Modal -->
-<Modal open={showAddSchedule} title="Add schedule" onclose={() => (showAddSchedule = false)}>
+<Modal open={showAddSchedule} title={t().customer.addSchedule} onclose={() => (showAddSchedule = false)}>
 	<form method="POST" action="?/createSchedule" use:enhance={withInvalidate('createSchedule')}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="sch-title" required>Title</Label>
+				<Label for="sch-title" required>{t().common.details}</Label>
 				<Input id="sch-title" name="title" required />
 			</div>
 			<div class="field">
-				<Label for="sch-start" required>Start date/time</Label>
+				<Label for="sch-start" required>{t().project.startDate}</Label>
 				<Input id="sch-start" name="start_at" type="datetime-local" required />
 			</div>
 			<div class="field">
-				<Label for="sch-end">End date/time</Label>
+				<Label for="sch-end">{t().project.endDate}</Label>
 				<Input id="sch-end" name="end_at" type="datetime-local" />
 			</div>
 			<div class="field">
-				<Label for="sch-note">Note</Label>
+				<Label for="sch-note">{t().customer.notes}</Label>
 				<Textarea id="sch-note" name="note" rows={2} />
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddSchedule = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Add</Button>
+			<Button type="button" variant="secondary" onclick={() => (showAddSchedule = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.add}</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Add Note Modal -->
-<Modal open={showAddNote} title="Add note" onclose={() => (showAddNote = false)}>
+<Modal open={showAddNote} title={t().customer.addNote} onclose={() => (showAddNote = false)}>
 	<form method="POST" action="?/createNote" use:enhance={withInvalidate('createNote')}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="note-content" required>Content</Label>
+				<Label for="note-content" required>{t().common.details}</Label>
 				<Textarea id="note-content" name="content" rows={4} required />
 			</div>
 			<div class="field">
-				<Label>Color</Label>
+				<Label>{t().common.filter}</Label>
 				<div class="color-picker">
 					{#each NOTE_COLORS as color (color)}
 						<label class="color-option">
@@ -366,44 +367,44 @@
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddNote = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Add</Button>
+			<Button type="button" variant="secondary" onclick={() => (showAddNote = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.add}</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Add Contact Modal -->
-<Modal open={showAddContact} title="Add contact" onclose={() => (showAddContact = false)}>
+<Modal open={showAddContact} title={t().customer.addContact} onclose={() => (showAddContact = false)}>
 	<form method="POST" action="?/createContact" use:enhance={withInvalidate('createContact')}>
 		<div class="form-grid">
 			<div class="field full">
-				<Label for="con-name" required>Name</Label>
+				<Label for="con-name" required>{t().account.name}</Label>
 				<Input id="con-name" name="name" required />
 			</div>
 			<div class="field">
-				<Label for="con-dept">Department</Label>
+				<Label for="con-dept">{t().common.details}</Label>
 				<Input id="con-dept" name="department" />
 			</div>
 			<div class="field">
-				<Label for="con-pos">Position</Label>
+				<Label for="con-pos">{t().common.details}</Label>
 				<Input id="con-pos" name="position" />
 			</div>
 			<div class="field">
-				<Label for="con-email">Email</Label>
+				<Label for="con-email">{t().customer.email}</Label>
 				<Input id="con-email" name="email" type="email" />
 			</div>
 			<div class="field">
-				<Label for="con-tel">Phone</Label>
+				<Label for="con-tel">{t().customer.tel}</Label>
 				<Input id="con-tel" name="tel" />
 			</div>
 			<div class="field full">
-				<Label for="con-note">Note</Label>
+				<Label for="con-note">{t().customer.notes}</Label>
 				<Textarea id="con-note" name="note" rows={2} />
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddContact = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Add</Button>
+			<Button type="button" variant="secondary" onclick={() => (showAddContact = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.add}</Button>
 		</div>
 	</form>
 </Modal>
