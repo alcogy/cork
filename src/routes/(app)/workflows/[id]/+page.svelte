@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, Textarea } from '$lib/ui';
 	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/domain/workflow/types';
-	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X } from '@lucide/svelte';
+	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDate, formatDateTime } from '$lib/utils';
@@ -181,6 +181,38 @@
 				</div>
 			{/if}
 
+			<!-- Files -->
+			<div class="section">
+				<h3><Paperclip size={14} /> Files ({data.files.length})</h3>
+				{#if data.isRequester || data.isAdmin}
+					<form method="POST" action="?/uploadFile" enctype="multipart/form-data" use:enhance={enh()} class="upload-form">
+						<input type="file" name="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" />
+						<Button type="submit" variant="secondary" size="sm" disabled={saving}>Upload</Button>
+					</form>
+				{/if}
+				{#if data.files.length > 0}
+					<ul class="file-list">
+						{#each data.files as file (file.id)}
+							<li class="file-item">
+								<Paperclip size={13} />
+								<span class="file-name">{file.filename}</span>
+								<span class="file-size">{(file.size / 1024).toFixed(0)} KB</span>
+								{#if data.isRequester || data.isAdmin}
+									<form method="POST" action="?/deleteFile" use:enhance={enh()}>
+										<input type="hidden" name="id" value={file.id} />
+										<button type="submit" class="del-btn" aria-label="Delete file" disabled={saving}>
+											<Trash2 size={13} />
+										</button>
+									</form>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="empty">No files attached.</p>
+				{/if}
+			</div>
+
 			<!-- Comments -->
 			<div class="section">
 				<h3>Comments ({wf.comments.length})</h3>
@@ -234,13 +266,13 @@
 					</div>
 					{#if wf.submitted_at}
 						<div class="meta-row">
-							<dt>Submitted</dt>
+							<dt>{t().common.createdAt}</dt>
 							<dd>{formatDate(wf.submitted_at)}</dd>
 						</div>
 					{/if}
 					{#if wf.completed_at}
 						<div class="meta-row">
-							<dt>Completed</dt>
+							<dt>{t().common.updatedAt}</dt>
 							<dd>{formatDate(wf.completed_at)}</dd>
 						</div>
 					{/if}
@@ -501,4 +533,38 @@
 	.meta-row dt { font-size: 0.75rem; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
 
 	.empty { text-align: center; color: var(--color-text-tertiary); padding: var(--space-lg); font-size: 0.875rem; }
+
+	.upload-form {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin-bottom: var(--space-md);
+	}
+
+	.file-input {
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+	}
+
+	.file-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.file-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		padding: var(--space-sm) var(--space-md);
+		background: var(--color-bg-subtle);
+		border-radius: var(--radius-sm);
+		font-size: 0.8125rem;
+	}
+
+	.file-name { flex: 1; font-weight: 500; }
+	.file-size { color: var(--color-text-muted); font-size: 0.75rem; }
 </style>

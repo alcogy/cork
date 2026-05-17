@@ -8,7 +8,7 @@ import { writeAuditLog } from '$lib/server/audit';
 export const load: PageServerLoad = async ({ platform, params, locals }) => {
 	const db = drizzle(platform!.env.DB, { schema });
 
-	const [workflow, allAccounts] = await Promise.all([
+	const [workflow, allAccounts, files] = await Promise.all([
 		db.query.workflows.findFirst({
 			where: eq(schema.workflows.id, params.id),
 			with: {
@@ -27,7 +27,9 @@ export const load: PageServerLoad = async ({ platform, params, locals }) => {
 		}),
 		db.select({ id: schema.accounts.id, name: schema.accounts.name })
 			.from(schema.accounts)
-			.orderBy(asc(schema.accounts.name))
+			.orderBy(asc(schema.accounts.name)),
+		db.select().from(schema.workflow_files)
+			.where(eq(schema.workflow_files.workflow_id, params.id))
 	]);
 
 	if (!workflow) throw error(404, 'Approval request not found');
@@ -40,7 +42,7 @@ export const load: PageServerLoad = async ({ platform, params, locals }) => {
 			(a) => a.approver_id === locals.user!.id && a.status === 'pending'
 		);
 
-	return { workflow, allAccounts, isRequester, isAdmin, canApprove };
+	return { workflow, allAccounts, files, isRequester, isAdmin, canApprove };
 };
 
 export const actions = {
@@ -154,6 +156,59 @@ export const actions = {
 		}
 
 		await writeAuditLog({ db: platform!.env.DB, account_id: locals.user!.id, action: 'update', resource_type: 'workflow', resource_id: params.id });
+		return { success: true };
+	},
+
+	uploadFile: async ({ request, platform, params, locals }) => {
+		const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+		const ALLOWED_TYPES = [
+			'application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+			'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			'text/plain', 'text/csv'
+		];
+
+		const data = await request.formData();
+		const file = data.get('file') as File | null;
+
+		if (!file || file.size === 0) return fail(400, { error: 'No file selected' });
+		if (file.size > MAX_SIZE) return fail(400, { error: 'File exceeds 10 MB limit' });
+		if (!ALLOWED_TYPES.includes(file.type)) return fail(400, { error: 'File type not allowed' });
+
+		const ext = file.name.split('.').pop() ?? '';
+		const r2_key = `workflows/${params.id}/${crypto.randomUUID()}.${ext}`;
+
+		await platform!.env.STORAGE.put(r2_key, await file.arrayBuffer(), {
+			httpMetadata: { contentType: file.type }
+		});
+
+		const db = drizzle(platform!.env.DB, { schema });
+		await db.insert(schema.workflow_files).values({
+			workflow_id: params.id,
+			uploader_id: locals.user!.id,
+			filename: file.name,
+			size: file.size,
+			content_type: file.type,
+			r2_key
+		});
+
+		await writeAuditLog({ db: platform!.env.DB, account_id: locals.user!.id, action: 'create', resource_type: 'workflow_file', resource_id: params.id });
+		return { success: true };
+	},
+
+	deleteFile: async ({ request, platform, params, locals }) => {
+		const data = await request.formData();
+		const id = data.get('id')?.toString();
+		if (!id) return fail(400, { error: 'Invalid request' });
+
+		const db = drizzle(platform!.env.DB, { schema });
+		const [file] = await db.select().from(schema.workflow_files).where(eq(schema.workflow_files.id, id));
+		if (!file) return fail(404, { error: 'File not found' });
+
+		await platform!.env.STORAGE.delete(file.r2_key);
+		await db.delete(schema.workflow_files).where(eq(schema.workflow_files.id, id));
+
+		await writeAuditLog({ db: platform!.env.DB, account_id: locals.user!.id, action: 'delete', resource_type: 'workflow_file', resource_id: id });
 		return { success: true };
 	},
 
