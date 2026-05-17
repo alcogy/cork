@@ -1,8 +1,8 @@
-# Limerick — Developer Guide
+# Cork — Developer Guide
 
 ## Project Overview
 
-Limerick is an open-source integrated business management platform built on Cloudflare's infrastructure. It combines CRM, project management, approval workflows, progress tracking (WBS), and a no-code app builder into a single self-hostable product.
+Cork is an open-source integrated business management platform built on Cloudflare's infrastructure. It combines CRM, project management, approval workflows, progress tracking (WBS), and a no-code app builder into a single self-hostable product.
 
 **Positioning**: CRM/SFA-centric integrated business suite (Salesforce-like). No-code is a supplementary feature. Differentiates from Kintone by being OSS + Cloudflare-native low-cost deployment.
 
@@ -46,7 +46,7 @@ Limerick is an open-source integrated business management platform built on Clou
 - Reactive language state via Svelte 5 runes (`src/lib/i18n/lang.svelte.ts`)
 - `t()` function — call in template to get reactive translations
 - Language switcher on Settings page and Login page
-- `localStorage` key: `limerick_lang`
+- `localStorage` key: `cork_lang`
 - **Applied to**: Sidebar nav, Login page, Settings page
 - **Not yet applied**: Customer, Project, Workflow, WBS, Apps pages (hardcoded EN)
 
@@ -86,12 +86,12 @@ Limerick is an open-source integrated business management platform built on Clou
 - Bookmarks stored in `app_bookmarks` table
 
 ### ❌ Not Yet Implemented
-- `/accounts/+page.svelte` — account management UI
-- `/profile/+page.svelte` — profile edit UI
-- Full i18n applied to all pages (infrastructure ready, just needs `t()` calls)
-- Workflow detail: file upload to R2
-- Project file upload to R2
-- WBS Gantt chart (WBSForm component exists but not wired to `/projects/[id]` WBS tab yet)
+- ~~`/accounts/+page.svelte`~~ ✅ implemented
+- ~~`/profile/+page.svelte`~~ ✅ implemented
+- ~~Full i18n~~ ✅ applied to all pages
+- ~~Workflow detail: file upload to R2~~ ✅ implemented
+- ~~Project file upload to R2~~ ✅ implemented (Files tab)
+- ~~WBS Gantt chart~~ ✅ WBSForm wired to `/projects/[id]` WBS tab (saveWbs action added)
 - E2E tests
 
 ---
@@ -176,7 +176,7 @@ import { t, setLocale, getLocale, LOCALES } from '$lib/i18n';
 <Button>{t().common.save}</Button>
 
 // Switch language:
-setLocale('ja');  // persists to localStorage as 'limerick_lang'
+setLocale('ja');  // persists to localStorage as 'cork_lang'
 ```
 
 Add new keys to both `en.ts` and `ja.ts`.

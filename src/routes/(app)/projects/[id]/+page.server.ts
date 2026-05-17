@@ -120,6 +120,37 @@ export const actions = {
 		return { success: true };
 	},
 
+	saveWbs: async ({ request, platform, params, locals }) => {
+		const data = await request.formData();
+		const wbs_id = data.get('wbs_id')?.toString();
+		const tasksJson = data.get('tasks')?.toString();
+		if (!wbs_id || !tasksJson) return fail(400, { error: 'Invalid request' });
+
+		interface TaskPayload { id: string; name: string; assignee: string; plannedStart: string; plannedEnd: string; }
+		let tasks: TaskPayload[];
+		try { tasks = JSON.parse(tasksJson); } catch { return fail(400, { error: 'Invalid task data' }); }
+
+		const db = drizzle(platform!.env.DB, { schema });
+		await db.delete(schema.wbs_tasks).where(eq(schema.wbs_tasks.wbs_id, wbs_id));
+
+		if (tasks.length > 0) {
+			await db.insert(schema.wbs_tasks).values(
+				tasks.map((t, i) => ({
+					wbs_id,
+					name: t.name || 'Untitled task',
+					status: 'todo' as const,
+					assignee_id: t.assignee || null,
+					planned_start: t.plannedStart || undefined,
+					planned_end: t.plannedEnd || undefined,
+					sort_order: i
+				}))
+			);
+		}
+
+		await writeAuditLog({ db: platform!.env.DB, account_id: locals.user!.id, action: 'update', resource_type: 'wbs', resource_id: wbs_id });
+		return { success: true };
+	},
+
 	createWbs: async ({ request, platform, params, locals }) => {
 		const db = drizzle(platform!.env.DB, { schema });
 		const project = await db.query.projects.findFirst({ where: eq(schema.projects.id, params.id) });

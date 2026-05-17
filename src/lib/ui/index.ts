@@ -12,4 +12,5 @@ export { default as SearchBar } from './SearchBar.svelte';
 export { default as ProfileEditor } from './ProfileEditor.svelte';
 export { default as AccountEditor } from './AccountEditor.svelte';
 export { default as SelectChip } from './SelectChip.svelte';
+export { default as WBSForm } from './WBSForm.svelte';
 export type { NavItem } from './Sidebar.svelte';

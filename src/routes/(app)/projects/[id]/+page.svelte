@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Button, Modal, Input, Label, Textarea, ConfirmDialog } from '$lib/ui';
+	import { Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm } from '$lib/ui';
+	import type { WBSFormData } from '$lib/ui/WBSForm.svelte';
 	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/domain/project/types';
 	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
@@ -223,45 +224,30 @@
 	{#if activeTab === 'wbs'}
 		<div class="tab-content">
 			{#if data.wbs}
-				<div class="wbs-header">
-					<div>
-						<h3>{data.wbs.title}</h3>
-						<p class="wbs-range">{formatDate(data.wbs.start_date)} — {formatDate(data.wbs.end_date)}</p>
-					</div>
-					<Button variant="primary" size="sm" onclick={() => (showAddTask = true)}>
-						<Plus size={14} /> Add task
-					</Button>
-				</div>
-
-				{#if data.wbs.tasks.length > 0}
-					<div class="wbs-task-list">
-						{#each data.wbs.tasks as task (task.id)}
-							<div class="wbs-task-row">
-								<div class="wbs-task-name">{task.name}</div>
-								<div class="wbs-task-meta">
-									{#if task.assignee}<span>{task.assignee.name}</span>{/if}
-									{#if task.planned_start}<span>{formatDate(task.planned_start)}</span>{/if}
-									{#if task.planned_end}<span>→ {formatDate(task.planned_end)}</span>{/if}
-								</div>
-								<span class="task-status status-{task.status}">{task.status.replace('_', ' ')}</span>
-								<div class="wbs-task-progress">
-									<div class="progress-bar">
-										<div class="progress-fill" style="width: {task.progress}%"></div>
-									</div>
-									<span>{task.progress}%</span>
-								</div>
-								<form method="POST" action="?/deleteTask" use:enhance={enh()}>
-									<input type="hidden" name="id" value={task.id} />
-									<button type="submit" class="del-btn" aria-label="Delete task"><Trash2 size={12} /></button>
-								</form>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="wbs-empty">
-						<p>No tasks yet. Add tasks to build your WBS.</p>
-					</div>
-				{/if}
+				<WBSForm
+					accounts={data.allAccounts}
+					initial={{
+						title: data.wbs.title,
+						description: data.wbs.description ?? '',
+						startDate: data.wbs.start_date,
+						endDate: data.wbs.end_date,
+						members: data.project.members.map((m) => m.account_id),
+						tasks: data.wbs.tasks.map((t) => ({
+							id: t.id,
+							name: t.name,
+							assignee: t.assignee_id ?? '',
+							plannedStart: t.planned_start ?? '',
+							plannedEnd: t.planned_end ?? ''
+						}))
+					}}
+					onSave={async (formData: WBSFormData) => {
+						const fd = new FormData();
+						fd.set('wbs_id', data.wbs!.id);
+						fd.set('tasks', JSON.stringify(formData.tasks));
+						await fetch('?/saveWbs', { method: 'POST', body: fd });
+						await invalidateAll();
+					}}
+				/>
 			{:else}
 				<div class="wbs-empty">
 					<p>No WBS created yet for this project.</p>
