@@ -359,6 +359,7 @@ export const wbs = sqliteTable('wbs', {
 	id: text('id')
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
+	project_id: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
 	title: text('title').notNull(),
 	description: text('description').notNull().default(''),
 	start_date: text('start_date').notNull(),
@@ -390,6 +391,7 @@ export const wbs_tasks = sqliteTable('wbs_tasks', {
 		.notNull()
 		.references(() => wbs.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
+	status: text('status', { enum: ['todo', 'in_progress', 'done'] }).notNull().default('todo'),
 	assignee_id: text('assignee_id').references(() => accounts.id, { onDelete: 'set null' }),
 	planned_start: text('planned_start').notNull().default(''),
 	planned_end: text('planned_end').notNull().default(''),
@@ -505,7 +507,8 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
 	creator: one(accounts, { fields: [projects.created_by], references: [accounts.id] }),
 	members: many(project_members),
 	activities: many(project_activities),
-	files: many(project_files)
+	files: many(project_files),
+	wbs: many(wbs)
 }));
 
 export const projectMemberRelations = relations(project_members, ({ one }) => ({
@@ -553,6 +556,7 @@ export const workflowCommentRelations = relations(workflow_comments, ({ one }) =
 }));
 
 export const wbsRelations = relations(wbs, ({ one, many }) => ({
+	project: one(projects, { fields: [wbs.project_id], references: [projects.id] }),
 	creator: one(accounts, { fields: [wbs.created_by], references: [accounts.id] }),
 	members: many(wbs_members),
 	tasks: many(wbs_tasks)

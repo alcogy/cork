@@ -9,10 +9,10 @@
 		CalendarDays,
 		FolderKanban,
 		CheckSquare,
-		GanttChartSquare,
 		AppWindow,
 		Shield,
 		CircleUser,
+		Settings,
 		LogOut
 	} from '@lucide/svelte';
 
@@ -26,9 +26,9 @@
 		{ href: '/schedules', label: 'Schedules', icon: CalendarDays },
 		{ href: '/projects', label: 'Projects', icon: FolderKanban },
 		{ href: '/workflows', label: 'Approvals', icon: CheckSquare },
-		{ href: '/progress', label: 'Progress', icon: GanttChartSquare },
 		{ href: '/apps', label: 'Apps', icon: AppWindow },
-		{ href: '/accounts', label: 'Accounts', icon: Shield, adminOnly: true }
+		{ href: '/accounts', label: 'Accounts', icon: Shield, adminOnly: true },
+		{ href: '/settings', label: 'Settings', icon: Settings, adminOnly: true }
 	];
 
 	const secondaryNavItems: NavItem[] = [
