@@ -59,7 +59,23 @@ export const en = {
 		progress: 'Progress',
 		apps: 'Apps',
 		accounts: 'Accounts',
-		profile: 'Profile'
+		profile: 'Profile',
+		settings: 'Settings',
+		signOut: 'Sign out'
+	},
+	settings: {
+		title: 'Settings',
+		language: 'Language',
+		languageDesc: 'Select the display language for the UI',
+		general: 'General',
+		projectStatuses: 'Project statuses',
+		projectCategories: 'Project categories',
+		workflowCategories: 'Approval categories',
+		recordsPerPage: 'Records per page',
+		recordsPerPageDesc: 'Number of items shown per page in list views',
+		addStatus: 'Add status',
+		addCategory: 'Add category',
+		adminOnly: 'Admin access only'
 	},
 	dashboard: {
 		title: 'Dashboard',

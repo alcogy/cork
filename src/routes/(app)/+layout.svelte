@@ -2,6 +2,7 @@
 	import { Sidebar, ConfirmDialog } from '$lib/ui';
 	import type { NavItem } from '$lib/ui';
 	import { getTheme, setTheme } from '$lib/theme.svelte';
+	import { t } from '$lib/i18n';
 	import type { LayoutData } from './$types';
 	import {
 		LayoutDashboard,
@@ -19,25 +20,26 @@
 
 	let showSignOutConfirm = $state(false);
 
-	const primaryNavItems: NavItem[] = [
-		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
-		{ href: '/customers', label: 'Customers', icon: Users },
-		{ href: '/projects', label: 'Projects', icon: FolderKanban },
-		{ href: '/workflows', label: 'Approvals', icon: CheckSquare },
-		{ href: '/apps', label: 'Apps', icon: AppWindow },
-		{ href: '/accounts', label: 'Accounts', icon: Shield, adminOnly: true },
-		{ href: '/settings', label: 'Settings', icon: Settings, adminOnly: true }
-	];
+	// Reactive: re-derives when locale changes
+	const primaryNavItems = $derived<NavItem[]>([
+		{ href: '/', label: t().nav.dashboard, icon: LayoutDashboard },
+		{ href: '/customers', label: t().nav.customers, icon: Users },
+		{ href: '/projects', label: t().nav.projects, icon: FolderKanban },
+		{ href: '/workflows', label: t().nav.workflows, icon: CheckSquare },
+		{ href: '/apps', label: t().nav.apps, icon: AppWindow },
+		{ href: '/accounts', label: t().nav.accounts, icon: Shield, adminOnly: true },
+		{ href: '/settings', label: t().nav.settings, icon: Settings, adminOnly: true }
+	]);
 
-	const secondaryNavItems: NavItem[] = [
-		{ href: '/profile', label: 'Profile', icon: CircleUser },
+	const secondaryNavItems = $derived<NavItem[]>([
+		{ href: '/profile', label: t().nav.profile, icon: CircleUser },
 		{
 			href: '/logout',
-			label: 'Sign out',
+			label: t().nav.signOut,
 			icon: LogOut,
 			onclick: () => (showSignOutConfirm = true)
 		}
-	];
+	]);
 </script>
 
 <div class="app-shell">
@@ -60,9 +62,9 @@
 
 <ConfirmDialog
 	open={showSignOutConfirm}
-	title="Sign out"
-	message="Are you sure you want to sign out?"
-	confirmLabel="Sign out"
+	title={t().auth.signOut}
+	message={t().auth.signOutConfirm}
+	confirmLabel={t().auth.signOut}
 	onconfirm={() => {
 		window.location.href = '/logout';
 	}}

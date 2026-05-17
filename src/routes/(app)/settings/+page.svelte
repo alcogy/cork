@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Button, Input, Label } from '$lib/ui';
-	import { Plus, Trash2 } from '@lucide/svelte';
+	import { Plus, Trash2, Globe } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { t, getLocale, setLocale, LOCALES, type Locale } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -19,29 +20,60 @@
 			};
 		};
 	}
+
+	function handleLocaleChange(e: Event) {
+		const val = (e.currentTarget as HTMLSelectElement).value as Locale;
+		setLocale(val);
+	}
 </script>
 
 <svelte:head>
-	<title>Settings — Cork</title>
+	<title>{t().settings.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
-	<h1 class="page-title">Settings</h1>
-	<p class="page-desc">Configure system-wide settings. Admin access only.</p>
+	<h1 class="page-title">{t().settings.title}</h1>
+	<p class="page-desc">{t().settings.adminOnly}</p>
+
+	<!-- Language -->
+	<section class="settings-section">
+		<h2><Globe size={16} /> {t().settings.language}</h2>
+		<div class="settings-card">
+			<div class="setting-row">
+				<div class="setting-info">
+					<div class="setting-label">{t().settings.language}</div>
+					<div class="setting-desc">{t().settings.languageDesc}</div>
+				</div>
+				<div class="setting-control">
+					<div class="locale-buttons">
+						{#each LOCALES as locale (locale.value)}
+							<button
+								type="button"
+								class="locale-btn {getLocale() === locale.value ? 'active' : ''}"
+								onclick={() => setLocale(locale.value)}
+							>
+								{locale.nativeLabel}
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
 
 	<!-- General Settings -->
 	<section class="settings-section">
-		<h2>General</h2>
+		<h2>{t().settings.general}</h2>
 		<div class="settings-card">
 			<form method="POST" action="?/saveSetting" use:enhance={enh()} class="setting-row">
 				<input type="hidden" name="key" value="page_num" />
 				<div class="setting-info">
-					<div class="setting-label">Records per page</div>
-					<div class="setting-desc">Number of items shown per page in list views</div>
+					<div class="setting-label">{t().settings.recordsPerPage}</div>
+					<div class="setting-desc">{t().settings.recordsPerPageDesc}</div>
 				</div>
 				<div class="setting-control">
 					<Input name="value" type="number" value={data.settingsMap['page_num'] ?? '30'} style="width: 80px" />
-					<Button type="submit" variant="secondary" size="sm" disabled={saving}>Save</Button>
+					<Button type="submit" variant="secondary" size="sm" disabled={saving}>{t().common.save}</Button>
 				</div>
 			</form>
 		</div>
@@ -49,7 +81,7 @@
 
 	<!-- Project Statuses -->
 	<section class="settings-section">
-		<h2>Project statuses</h2>
+		<h2>{t().settings.projectStatuses}</h2>
 		<div class="settings-card">
 			{#each data.projectStatuses as status (status.id)}
 				<div class="list-row">
@@ -57,17 +89,17 @@
 					<span class="list-label">{status.label}</span>
 					<form method="POST" action="?/deleteProjectStatus" use:enhance={enh()}>
 						<input type="hidden" name="id" value={status.id} />
-						<button type="submit" class="del-btn" aria-label="Delete status" disabled={saving}>
+						<button type="submit" class="del-btn" aria-label="Delete" disabled={saving}>
 							<Trash2 size={13} />
 						</button>
 					</form>
 				</div>
 			{/each}
 			<form method="POST" action="?/addProjectStatus" use:enhance={enh()} class="add-row">
-				<input name="label" class="inline-input" placeholder="New status..." required />
+				<input name="label" class="inline-input" placeholder="{t().settings.addStatus}..." required />
 				<input name="color" type="color" class="color-input" value="#94a3b8" />
 				<Button type="submit" variant="primary" size="sm" disabled={saving}>
-					<Plus size={13} /> Add
+					<Plus size={13} /> {t().common.add}
 				</Button>
 			</form>
 		</div>
@@ -75,23 +107,23 @@
 
 	<!-- Project Categories -->
 	<section class="settings-section">
-		<h2>Project categories</h2>
+		<h2>{t().settings.projectCategories}</h2>
 		<div class="settings-card">
 			{#each data.projectCategories as cat (cat.id)}
 				<div class="list-row">
 					<span class="list-label">{cat.label}</span>
 					<form method="POST" action="?/deleteProjectCategory" use:enhance={enh()}>
 						<input type="hidden" name="id" value={cat.id} />
-						<button type="submit" class="del-btn" aria-label="Delete category" disabled={saving}>
+						<button type="submit" class="del-btn" aria-label="Delete" disabled={saving}>
 							<Trash2 size={13} />
 						</button>
 					</form>
 				</div>
 			{/each}
 			<form method="POST" action="?/addProjectCategory" use:enhance={enh()} class="add-row">
-				<input name="label" class="inline-input" placeholder="New category..." required />
+				<input name="label" class="inline-input" placeholder="{t().settings.addCategory}..." required />
 				<Button type="submit" variant="primary" size="sm" disabled={saving}>
-					<Plus size={13} /> Add
+					<Plus size={13} /> {t().common.add}
 				</Button>
 			</form>
 		</div>
@@ -99,7 +131,7 @@
 
 	<!-- Workflow Categories -->
 	<section class="settings-section">
-		<h2>Approval categories</h2>
+		<h2>{t().settings.workflowCategories}</h2>
 		<div class="settings-card">
 			{#each data.workflowCategories as cat (cat.id)}
 				<div class="list-row">
@@ -107,17 +139,17 @@
 					<span class="list-label">{cat.label}</span>
 					<form method="POST" action="?/deleteWorkflowCategory" use:enhance={enh()}>
 						<input type="hidden" name="id" value={cat.id} />
-						<button type="submit" class="del-btn" aria-label="Delete category" disabled={saving}>
+						<button type="submit" class="del-btn" aria-label="Delete" disabled={saving}>
 							<Trash2 size={13} />
 						</button>
 					</form>
 				</div>
 			{/each}
 			<form method="POST" action="?/addWorkflowCategory" use:enhance={enh()} class="add-row">
-				<input name="label" class="inline-input" placeholder="New category..." required />
+				<input name="label" class="inline-input" placeholder="{t().settings.addCategory}..." required />
 				<input name="color" type="color" class="color-input" value="#6b7280" />
 				<Button type="submit" variant="primary" size="sm" disabled={saving}>
-					<Plus size={13} /> Add
+					<Plus size={13} /> {t().common.add}
 				</Button>
 			</form>
 		</div>
@@ -127,10 +159,21 @@
 <style lang="scss">
 	.page { display: flex; flex-direction: column; gap: var(--space-2xl); max-width: 720px; }
 	.page-title { font-size: 1.5rem; font-weight: 700; }
-	.page-desc { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: -var(--space-lg); }
+	.page-desc { font-size: 0.875rem; color: var(--color-text-secondary); }
 
-	.settings-section { display: flex; flex-direction: column; gap: var(--space-md); }
-	.settings-section h2 { font-size: 1rem; font-weight: 600; }
+	.settings-section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+
+		h2 {
+			display: flex;
+			align-items: center;
+			gap: var(--space-sm);
+			font-size: 1rem;
+			font-weight: 600;
+		}
+	}
 
 	.settings-card {
 		background-color: var(--color-bg-elevated);
@@ -151,6 +194,41 @@
 	.setting-label { font-weight: 500; font-size: 0.875rem; }
 	.setting-desc { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: 2px; }
 	.setting-control { display: flex; align-items: center; gap: var(--space-sm); }
+
+	/* Language switcher */
+	.locale-buttons {
+		display: flex;
+		gap: 2px;
+		background-color: var(--color-bg-sunken);
+		padding: 3px;
+		border-radius: var(--radius-md);
+	}
+
+	.locale-btn {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		padding: var(--space-xs) var(--space-xl);
+		border: none;
+		background: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		font-family: inherit;
+
+		&.active {
+			background-color: var(--color-bg-elevated);
+			color: var(--color-text);
+			box-shadow: var(--shadow-sm);
+		}
+
+		&:hover:not(.active) {
+			color: var(--color-text);
+		}
+	}
 
 	.list-row {
 		display: flex;

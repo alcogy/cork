@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button, Input, Label } from '$lib/ui';
 	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
+	import { t, getLocale, setLocale, LOCALES, type Locale } from '$lib/i18n';
 	import { Sun, Moon, Monitor } from '@lucide/svelte';
 	import type { ActionData } from './$types';
 
@@ -17,18 +18,31 @@
 </script>
 
 <svelte:head>
-	<title>Sign in — Cork</title>
+	<title>{t().auth.signIn} — Cork</title>
 </svelte:head>
 
 <div class="login-page">
-	<button class="theme-toggle" onclick={cycleTheme} aria-label="Toggle theme">
-		<ThemeIcon size={16} />
-	</button>
+	<div class="login-controls">
+		<div class="locale-switcher">
+			{#each LOCALES as locale (locale.value)}
+				<button
+					type="button"
+					class="locale-tab {getLocale() === locale.value ? 'active' : ''}"
+					onclick={() => setLocale(locale.value)}
+				>
+					{locale.nativeLabel}
+				</button>
+			{/each}
+		</div>
+		<button class="theme-toggle" onclick={cycleTheme} aria-label="Toggle theme">
+			<ThemeIcon size={16} />
+		</button>
+	</div>
 
 	<div class="login-card">
 		<div class="login-header">
 			<h1 class="login-title">Cork</h1>
-			<p class="login-subtitle">Sign in to your account</p>
+			<p class="login-subtitle">{t().auth.signIn}</p>
 		</div>
 
 		<form method="POST" class="login-form">
@@ -37,30 +51,30 @@
 			{/if}
 
 			<div class="field">
-				<Label for="email" required>Email address</Label>
+				<Label for="email" required>{t().auth.email}</Label>
 				<Input
 					id="email"
 					type="email"
 					name="email"
-					placeholder="admin@example.com"
+					placeholder={t().auth.emailPlaceholder}
 					autocomplete="email"
 					required
 				/>
 			</div>
 
 			<div class="field">
-				<Label for="password" required>Password</Label>
+				<Label for="password" required>{t().auth.password}</Label>
 				<Input
 					id="password"
 					type="password"
 					name="password"
-					placeholder="Enter your password"
+					placeholder={t().auth.passwordPlaceholder}
 					autocomplete="current-password"
 					required
 				/>
 			</div>
 
-			<Button type="submit" variant="primary" size="lg">Sign in</Button>
+			<Button type="submit" variant="primary" size="lg">{t().auth.signIn}</Button>
 		</form>
 	</div>
 </div>
@@ -75,10 +89,44 @@
 		position: relative;
 	}
 
-	.theme-toggle {
+	.login-controls {
 		position: absolute;
 		top: var(--space-lg);
 		right: var(--space-lg);
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
+	.locale-switcher {
+		display: flex;
+		gap: 1px;
+		background-color: var(--color-bg-sunken);
+		padding: 2px;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--color-border-light);
+	}
+
+	.locale-tab {
+		padding: 4px var(--space-md);
+		border: none;
+		background: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		font-family: inherit;
+		transition: all var(--transition-fast);
+
+		&.active {
+			background-color: var(--color-bg-elevated);
+			color: var(--color-text);
+			box-shadow: var(--shadow-sm);
+		}
+	}
+
+	.theme-toggle {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
