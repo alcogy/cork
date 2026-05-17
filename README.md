@@ -1,10 +1,21 @@
 # Cork
 
-Open-source integrated business management platform built on Cloudflare's infrastructure. Combines CRM, project management, approval workflows, WBS progress tracking, and a no-code app builder into a single self-hostable product.
+Open-source integrated business management platform built on Cloudflare's infrastructure. Combines CRM, project management, approval workflows, WBS / Gantt progress tracking, and a no-code app builder into a single self-hostable product.
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/alcogyinc/cork)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/alcogy/cork)
 
-> **Note:** After clicking the button above, follow the [post-deploy setup](#post-deploy-setup) steps to create the D1 database and run migrations.
+> **Note:** The deploy button handles Worker deployment. After clicking, follow the [post-deploy setup](#post-deploy-setup) steps to wire up D1 and R2.
+
+## Features
+
+| Module | Capabilities |
+|---|---|
+| **CRM** | Customer list/detail, activities, schedules, sticky notes, contacts, CSV export/import |
+| **Projects** | Kanban board, WBS Gantt chart, file uploads (R2), members, activity log |
+| **Approvals** | Multi-step approval workflows, approver setup, approve/reject, comments, file attachments |
+| **No-code Apps** | Drag-and-drop field builder, record management, publish/draft toggle, bookmarks |
+| **Accounts** | User management (admin only), role assignment |
+| **i18n** | English / Japanese, switchable at runtime |
 
 ## Stack
 
@@ -17,122 +28,98 @@ Open-source integrated business management platform built on Cloudflare's infras
 | ORM | Drizzle ORM |
 | Language | TypeScript |
 | Package manager | Bun |
+| Icons | @lucide/svelte |
 
 ---
 
-## One-Command Deploy (Recommended)
-
-The fastest way to deploy Cork to your own Cloudflare account:
+## One-Command Deploy
 
 ```bash
-# Clone the repo
-git clone https://github.com/alcogyinc/cork
+git clone https://github.com/alcogy/cork
 cd cork
-
-# Install dependencies
 bun install
 
-# Deploy (creates D1 + R2, runs migrations, deploys Worker)
+# Creates D1 + R2, runs migrations, builds, deploys
 bash deploy.sh
 
-# Optional: seed with demo data (admin@example.com / admin123)
+# With demo seed data (admin@example.com / admin123)
 bash deploy.sh --seed
 ```
 
-The script will:
-1. Log you in to Cloudflare via browser (first time only)
-2. Create a D1 database named `cork`
-3. Create an R2 bucket named `cork-storage`
-4. Update `wrangler.jsonc` with the real database ID
-5. Run SQL migrations
-6. Build and deploy the Worker
+The script automatically:
+1. Logs you in to Cloudflare (browser, first time only)
+2. Creates D1 database `cork` (or reuses existing)
+3. Creates R2 bucket `cork-storage` (or reuses existing)
+4. Patches `wrangler.jsonc` with the real database ID
+5. Runs SQL migrations on the remote D1
+6. Builds and deploys the Worker
 
 ---
 
 ## GitHub Actions (CI/CD)
 
-For automated deployments on every push to `main`:
+Every push to `main` triggers automatic deployment.
 
-### 1. Set GitHub Secrets
+### Setup
 
-In your repository → **Settings → Secrets and variables → Actions**, add:
+1. **GitHub Secrets** — add in repo Settings → Secrets → Actions:
 
-| Secret | How to get it |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | [Create token](https://dash.cloudflare.com/profile/api-tokens) with **Workers:Edit** + **D1:Edit** + **R2:Edit** permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → right sidebar → Account ID |
+   | Secret | Where to find |
+   |---|---|
+   | `CLOUDFLARE_API_TOKEN` | [Create token](https://dash.cloudflare.com/profile/api-tokens) with Workers:Edit + D1:Edit + R2:Edit |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → right sidebar |
 
-### 2. Set the D1 database ID
+2. **Set real database ID** in `wrangler.jsonc` after first deploy:
 
-After running `bash deploy.sh` once (or creating the DB manually), set the real `database_id` in `wrangler.jsonc`:
+   ```bash
+   bunx wrangler d1 list   # copy your DB's UUID
+   ```
 
-```bash
-bunx wrangler d1 list   # find your DB ID
-```
+   ```jsonc
+   // wrangler.jsonc
+   { "d1_databases": [{ "database_id": "<your-uuid>" }] }
+   ```
 
-```jsonc
-// wrangler.jsonc
-{
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "cork",
-    "database_id": "<your-database-id>"   // ← replace this
-  }]
-}
-```
+3. Push to `main` — GitHub Actions handles the rest.
 
-### 3. Push to main
-
-Every push to `main` will automatically build, migrate, and deploy.
-
-You can also trigger a manual deploy from **Actions → Deploy to Cloudflare → Run workflow**.
+You can also trigger manually: **Actions → Deploy to Cloudflare → Run workflow**.
 
 ---
 
 ## Post-Deploy Setup
 
-After first deployment:
-
-1. Open the Worker URL in your browser
-2. Log in with `admin@example.com` / `admin123` (if you used `--seed`)
-3. **Change the default password immediately** in Profile settings
-4. Add your team members in Accounts → New account
+1. Open the Worker URL shown after deployment
+2. Log in with `admin@example.com` / `admin123` (if you ran `--seed`)
+3. **Change the default password** in Profile settings immediately
+4. Add team members in Accounts → New account
 
 ---
 
 ## Local Development
 
 ```bash
-# Install dependencies
 bun install
-
-# Create and migrate local D1
-bun run db:generate
-bun run db:migrate:local
-
-# Seed local DB
-bun run db:seed
-
-# Start dev server
-bun dev
-# → http://localhost:5173
-# admin: admin@example.com / admin123
-# user:  user@example.com  / user123
+bun run db:generate        # Generate migrations from schema
+bun run db:migrate:local   # Apply to local D1
+bun run db:seed            # Seed local DB
+bun dev                    # → http://localhost:5173
 ```
 
-### Available commands
+Default credentials: `admin@example.com` / `admin123`
+
+### All commands
 
 ```bash
-bun dev                    # Start dev server
+bun dev                    # Dev server
 bun run build              # Production build
 bun run check              # TypeScript + svelte-check
 bun run lint               # Prettier + ESLint
 bun run format             # Auto-format
-bun run test:unit          # Vitest unit tests
-bun run test:e2e           # Playwright E2E tests
-bun run db:generate        # Generate migrations from schema
-bun run db:migrate:local   # Apply migrations to local D1
-bun run db:migrate:remote  # Apply migrations to remote D1
+bun run test:unit          # Vitest
+bun run test:e2e           # Playwright
+bun run db:generate        # Schema → migration SQL
+bun run db:migrate:local   # Local D1 migration
+bun run db:migrate:remote  # Remote D1 migration
 bun run db:seed            # Seed local DB
 bun run db:studio          # Drizzle Studio (needs remote credentials)
 ```

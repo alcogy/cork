@@ -2,9 +2,10 @@
 
 ## Project Overview
 
-Cork is an open-source integrated business management platform built on Cloudflare's infrastructure. It combines CRM, project management, approval workflows, progress tracking (WBS), and a no-code app builder into a single self-hostable product.
+Cork is an open-source integrated business management platform built on Cloudflare's infrastructure. It combines CRM, project management, approval workflows, progress tracking (WBS / Gantt), and a no-code app builder into a single self-hostable product.
 
-**Positioning**: CRM/SFA-centric integrated business suite (Salesforce-like). No-code is a supplementary feature. Differentiates from Kintone by being OSS + Cloudflare-native low-cost deployment.
+- **GitHub**: https://github.com/alcogy/cork
+- **Positioning**: CRM/SFA-centric integrated business suite (Salesforce-like). No-code is a supplementary feature. Differentiates from Kintone by being OSS + Cloudflare-native low-cost deployment.
 
 ## Stack
 
@@ -41,14 +42,18 @@ Cork is an open-source integrated business management platform built on Cloudfla
 - DB migration scripts (drizzle/0000 initial, drizzle/0001 wbs schema)
 - Seed data (`src/lib/server/db/seed.ts`)
 
+#### Deployment
+- `deploy.sh` — one-command setup + deploy (creates D1/R2, runs migrations, patches wrangler.jsonc, deploys)
+- `.github/workflows/deploy.yml` — GitHub Actions CI/CD (push to main → auto deploy)
+- `README.md` — "Deploy to Cloudflare Workers" button wired to `https://github.com/alcogy/cork`
+
 #### i18n
 - English (`src/lib/i18n/en.ts`) + Japanese (`src/lib/i18n/ja.ts`) translations
 - Reactive language state via Svelte 5 runes (`src/lib/i18n/lang.svelte.ts`)
 - `t()` function — call in template to get reactive translations
 - Language switcher on Settings page and Login page
 - `localStorage` key: `cork_lang`
-- **Applied to**: Sidebar nav, Login page, Settings page
-- **Not yet applied**: Customer, Project, Workflow, WBS, Apps pages (hardcoded EN)
+- **Applied to**: all pages (Sidebar, Login, Settings, Dashboard, Customers, Projects, Workflows, Apps, Accounts, Profile)
 
 #### Routes
 | Route | Status | Notes |
@@ -56,21 +61,21 @@ Cork is an open-source integrated business management platform built on Cloudfla
 | `/login` | ✅ | Language + theme switcher |
 | `/logout` | ✅ | |
 | `/` (Dashboard) | ✅ | 7 stats, recent activities, schedule toggle (upcoming/past), projects, pending approvals |
-| `/customers` | ✅ | List, CRUD, CSV export/import, note count |
-| `/customers/[id]` | ✅ | Activities, Schedules, Notes (sticky), Contacts tabs |
+| `/customers` | ✅ | List, CRUD, CSV export/import, note count; i18n applied |
+| `/customers/[id]` | ✅ | Activities, Schedules, Notes (sticky), Contacts tabs; i18n applied |
 | `/customers/export` | ✅ | CSV export |
-| `/projects` | ✅ | List, create (start/end date required) |
-| `/projects/[id]` | ✅ | Overview, Kanban, WBS, Members, Activity tabs |
-| `/workflows` | ✅ | List, create, status filter |
-| `/workflows/[id]` | ✅ | Approver setup (draft), approval steps, approve/reject, comments |
+| `/projects` | ✅ | List, create (start/end date required); i18n applied |
+| `/projects/[id]` | ✅ | Overview, Kanban, WBS (Gantt), Files, Members, Activity tabs |
+| `/workflows` | ✅ | List, create, status filter; i18n applied |
+| `/workflows/[id]` | ✅ | Approver setup, approval steps, approve/reject, comments, file upload (R2); i18n applied |
 | `/progress` | ✅ | Redirects to `/projects` |
-| `/apps` | ✅ | List, create, bookmark toggle/filter |
-| `/apps/[id]` | ✅ | Record list, dynamic field rendering, publish toggle |
+| `/apps` | ✅ | List, create, bookmark toggle/filter; i18n applied |
+| `/apps/[id]` | ✅ | Record list, dynamic field rendering, publish toggle; i18n applied |
 | `/apps/[id]/build` | ✅ | Drag-and-drop no-code builder (admin only) |
 | `/schedules` | ✅ | Exists but removed from nav (Upcoming/Past now on Dashboard) |
 | `/settings` | ✅ | Language switch, records/page, project statuses/categories, approval categories (admin only) |
-| `/accounts` | ✅ | server: CRUD; **svelte: not yet created** |
-| `/profile` | ✅ | server: update name/password; **svelte: not yet created** |
+| `/accounts` | ✅ | Full UI: list, create, edit, delete with AccountEditor modal (admin only) |
+| `/profile` | ✅ | Inline form: name edit + password change |
 
 #### UI Components (`src/lib/ui/`)
 - Button, Input, Textarea, Label, Card, Modal, ConfirmDialog
@@ -78,21 +83,27 @@ Cork is an open-source integrated business management platform built on Cloudfla
 - Pagination (`currentPage`, `totalPages`, `onpagechange` props)
 - SearchBar (`onsearch` prop — not `onsubmit`)
 - Sidebar (accepts `primaryNavItems`, `secondaryNavItems` props; exports `NavItem` type)
-- SelectChip, WBSForm
+- SelectChip, WBSForm (exported from index.ts — use `import type { WBSFormData } from '$lib/ui/WBSForm.svelte'`)
+- AccountEditor, ProfileEditor (modal-based editors)
+
+#### WBS / Gantt
+- `WBSForm` component: drag-to-create bars, move/resize, zoom levels (全体/月/週/日), assignee picker, member selection
+- `saveWbs` action in `/projects/[id]/+page.server.ts`: bulk replaces all tasks (delete + re-insert)
+- WBS tab in `/projects/[id]` uses WBSForm with `onSave` wired to `?/saveWbs` via fetch
+
+#### File Uploads (R2)
+- Workflow files: `?/uploadFile` + `?/deleteFile` actions; visible in Files section of workflow detail
+- Project files: `?/uploadFile` + `?/deleteFile` actions; visible in Files tab of project detail
+- Validation: 10 MB max, allowed MIME types: pdf, png, jpg, gif, webp, doc, docx, xls, xlsx, txt, csv
+- R2 binding: `platform!.env.STORAGE` (`wrangler.jsonc` bucket name: `cork-storage`)
 
 #### No-code Apps
-- `/api/bookmarks` POST endpoint — toggles bookmark (aes-nocode pattern)
+- `/api/bookmarks` POST endpoint — toggles bookmark
 - App builder: field types: text, textarea, link, number, date, datetime, select, checkbox, radio, user
 - Bookmarks stored in `app_bookmarks` table
 
 ### ❌ Not Yet Implemented
-- ~~`/accounts/+page.svelte`~~ ✅ implemented
-- ~~`/profile/+page.svelte`~~ ✅ implemented
-- ~~Full i18n~~ ✅ applied to all pages
-- ~~Workflow detail: file upload to R2~~ ✅ implemented
-- ~~Project file upload to R2~~ ✅ implemented (Files tab)
-- ~~WBS Gantt chart~~ ✅ WBSForm wired to `/projects/[id]` WBS tab (saveWbs action added)
-- E2E tests
+- E2E tests (Playwright)
 
 ---
 
@@ -135,10 +146,15 @@ src/
       progress/          # → redirects to /projects
       apps/
       accounts/
+      profile/
       settings/
       schedules/         # Exists but not in sidebar nav
     login/
     logout/
+.github/
+  workflows/
+    deploy.yml           # GitHub Actions: push to main → build + migrate + deploy
+deploy.sh                # One-command Cloudflare setup + deploy
 ```
 
 ---
@@ -181,12 +197,21 @@ setLocale('ja');  // persists to localStorage as 'cork_lang'
 
 Add new keys to both `en.ts` and `ja.ts`.
 
+For `columns` arrays that need to react to locale changes, use `$derived`:
+```ts
+const columns = $derived([
+  { key: 'name', label: t().customer.name },
+  ...
+]);
+```
+
 ### UI Components
 Import from `$lib/ui`. Key API notes:
 - `Table`: `cell` snippet receives `(column: Column, row: T)` — not just the cell value
 - `SearchBar`: prop is `onsearch` (not `onsubmit`)
 - `Pagination`: props are `currentPage`, `totalPages`, `onpagechange`
 - `Sidebar`: requires `primaryNavItems` and `secondaryNavItems` as props; exports `NavItem` type
+- `WBSForm`: props `accounts`, `initial`, `holidays`, `onSave`, `onCancel`; import type via `import type { WBSFormData } from '$lib/ui/WBSForm.svelte'`
 
 ### Database
 - Always import `* as schema` from `$lib/server/db/schema`
@@ -194,11 +219,24 @@ Import from `$lib/ui`. Key API notes:
 - All PK: `crypto.randomUUID()` (except integer autoincrement: `project_statuses`, `project_categories`)
 - Timestamps: ISO strings stored as SQLite text
 
+### File Uploads (R2)
+```ts
+// Upload
+await platform!.env.STORAGE.put(r2_key, await file.arrayBuffer(), {
+  httpMetadata: { contentType: file.type }
+});
+
+// Delete
+await platform!.env.STORAGE.delete(r2_key);
+```
+Always validate MIME type and file size (10 MB limit) before uploading.
+
 ### WBS ↔ Project Relationship
 - WBS is linked to a project via `wbs.project_id`
 - WBS start/end dates are copied from project's dates on creation (project dates are required)
 - `wbs_tasks.status`: `'todo' | 'in_progress' | 'done'` (Kanban columns)
-- Access WBS via `/projects/[id]` → Kanban / WBS tabs
+- `saveWbs` action bulk-replaces tasks (delete all + re-insert)
+- Access WBS via `/projects/[id]` → WBS tab
 
 ### Cloudflare Workers Compatibility
 - No Node.js APIs — use Web APIs only (fetch, crypto, TextEncoder, etc.)
@@ -232,6 +270,12 @@ bun dev
 # → http://localhost:5173
 # admin: admin@example.com / admin123
 # user:  user@example.com  / user123
+```
+
+**One-command Cloudflare deploy:**
+```bash
+bash deploy.sh          # setup + deploy
+bash deploy.sh --seed   # setup + deploy + seed
 ```
 
 ---
