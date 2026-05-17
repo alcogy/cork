@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.app.name} — Limerick</title>
+	<title>{data.app.name} — Cork</title>
 </svelte:head>
 
 <div class="page">

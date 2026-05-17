@@ -58,7 +58,7 @@
 </script>
 
 <svelte:head>
-	<title>Customers — Limerick</title>
+	<title>Customers — Cork</title>
 </svelte:head>
 
 <div class="page">

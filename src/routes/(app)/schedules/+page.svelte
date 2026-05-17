@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-	<title>Schedules — Limerick</title>
+	<title>Schedules — Cork</title>
 </svelte:head>
 
 <div class="page">

@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>{t().settings.title} — Limerick</title>
+	<title>{t().settings.title} — Cork</title>
 </svelte:head>
 
 <div class="page">

@@ -65,7 +65,7 @@
 		{#if logo}
 			{@render logo()}
 		{:else}
-			<span class="logo-text">Limerick</span>
+			<span class="logo-text">Cork</span>
 		{/if}
 	</div>
 

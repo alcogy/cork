@@ -51,7 +51,7 @@
 		role={data.user?.role}
 	>
 		{#snippet logo()}
-			<span class="logo-text">Limerick</span>
+			<span class="logo-text">Cork</span>
 		{/snippet}
 	</Sidebar>
 

@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>{t().auth.signIn} — Limerick</title>
+	<title>{t().auth.signIn} — Cork</title>
 </svelte:head>
 
 <div class="login-page">
@@ -41,7 +41,7 @@
 
 	<div class="login-card">
 		<div class="login-header">
-			<h1 class="login-title">Limerick</h1>
+			<h1 class="login-title">Cork</h1>
 			<p class="login-subtitle">{t().auth.signIn}</p>
 		</div>
 

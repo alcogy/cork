@@ -38,7 +38,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard — Limerick</title>
+	<title>Dashboard — Cork</title>
 </svelte:head>
 
 <div class="dashboard">

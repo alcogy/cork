@@ -53,7 +53,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.project.title} — Limerick</title>
+	<title>{data.project.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
