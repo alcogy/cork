@@ -29,7 +29,7 @@ Cork is an open-source integrated business management platform built on Cloudfla
 
 ---
 
-## Implementation Status (2026-05-17)
+## Implementation Status (2026-05-18)
 
 ### ✅ Completed
 
@@ -37,7 +37,7 @@ Cork is an open-source integrated business management platform built on Cloudfla
 - Unified Drizzle schema for all 5 modules + `audit_logs` (`src/lib/server/db/schema.ts`)
 - PBKDF2 authentication + session cookie (`src/lib/server/auth/index.ts`)
 - Audit logging on all write actions (`src/lib/server/audit.ts`)
-- DDD-inspired directory structure (`src/lib/domain/`)
+- Layered directory structure: `src/lib/types/` + `src/lib/services/` (see Architecture Policy)
 - Security headers in `hooks.server.ts`
 - DB migration scripts (drizzle/0000 initial, drizzle/0001 wbs schema)
 - Seed data (`src/lib/server/db/seed.ts`)
@@ -51,59 +51,71 @@ Cork is an open-source integrated business management platform built on Cloudfla
 - English (`src/lib/i18n/en.ts`) + Japanese (`src/lib/i18n/ja.ts`) translations
 - Reactive language state via Svelte 5 runes (`src/lib/i18n/lang.svelte.ts`)
 - `t()` function — call in template to get reactive translations
-- Language switcher on Settings page and Login page
-- `localStorage` key: `cork_lang`
-- **Applied to**: all pages (Sidebar, Login, Settings, Dashboard, Customers, Projects, Workflows, Apps, Accounts, Profile)
+- Cookie-based SSR locale (`cork_lang` cookie) — prevents language FOUC on reload
+- FOUC prevention: inline `<script>` in `app.html` applies theme + lang before first paint
+- Language switcher + theme switcher on Settings page; language switcher on Login page
+- `localStorage` key: `cork_lang`; cookie: `cork_lang`
+- **Applied to**: all pages and UI components (全ページ・UIコンポーネント完全対応済み)
 
 #### Routes
 | Route | Status | Notes |
 |---|---|---|
-| `/login` | ✅ | Language + theme switcher |
+| `/login` | ✅ | Language switcher |
 | `/logout` | ✅ | |
-| `/` (Dashboard) | ✅ | 7 stats, recent activities, schedule toggle (upcoming/past), projects, pending approvals |
+| `/` (Dashboard) | ✅ | 7 stats, recent activities, schedule toggle (upcoming/past), projects, pending approvals; i18n完全対応 |
 | `/customers` | ✅ | List, CRUD, CSV export/import, note count; i18n applied |
 | `/customers/[id]` | ✅ | Activities, Schedules, Notes (sticky), Contacts tabs; i18n applied |
 | `/customers/export` | ✅ | CSV export |
 | `/projects` | ✅ | List, create (start/end date required); i18n applied |
-| `/projects/[id]` | ✅ | Overview, Kanban, WBS (Gantt), Files, Members, Activity tabs |
+| `/projects/[id]` | ✅ | Overview, Kanban, WBS (Gantt), Files, Members, Activity tabs; i18n完全対応 |
 | `/workflows` | ✅ | List, create, status filter; i18n applied |
-| `/workflows/[id]` | ✅ | Approver setup, approval steps, approve/reject, comments, file upload (R2); i18n applied |
+| `/workflows/[id]` | ✅ | Approver setup (step renumbering), approve/reject (confirm dialog + shared comment), comments, file upload (R2); i18n完全対応 |
 | `/progress` | ✅ | Redirects to `/projects` |
 | `/apps` | ✅ | List, create, bookmark toggle/filter; i18n applied |
 | `/apps/[id]` | ✅ | Record list, dynamic field rendering, publish toggle; i18n applied |
-| `/apps/[id]/build` | ✅ | Drag-and-drop no-code builder (admin only) |
+| `/apps/[id]/build` | ✅ | Drag-and-drop no-code builder (admin only); field type labels i18n対応 |
 | `/schedules` | ✅ | Exists but removed from nav (Upcoming/Past now on Dashboard) |
-| `/settings` | ✅ | Language switch, records/page, project statuses/categories, approval categories (admin only) |
+| `/settings` | ✅ | Theme switcher (Light/Dark/System), language switch, records/page, project statuses/categories, approval categories (admin only) |
 | `/accounts` | ✅ | Full UI: list, create, edit, delete with AccountEditor modal (admin only) |
 | `/profile` | ✅ | Inline form: name edit + password change |
 
 #### UI Components (`src/lib/ui/`)
-- Button, Input, Textarea, Label, Card, Modal, ConfirmDialog
+- Button, Input, Textarea (width: 100%), Label, Card, Modal, ConfirmDialog
 - Table (cell snippet takes `(column, row)` — full row available)
 - Pagination (`currentPage`, `totalPages`, `onpagechange` props)
 - SearchBar (`onsearch` prop — not `onsubmit`)
-- Sidebar (accepts `primaryNavItems`, `secondaryNavItems` props; exports `NavItem` type)
+- Sidebar (`primaryNavItems`, `secondaryNavItems` props; theme switcher removed — moved to Settings)
 - SelectChip, WBSForm (exported from index.ts — use `import type { WBSFormData } from '$lib/ui/WBSForm.svelte'`)
-- AccountEditor, ProfileEditor (modal-based editors)
+- AccountEditor, ProfileEditor — i18n対応済み
+- **FileUploadDialog** — 再利用可能なドラッグ&ドロップアップロードダイアログ (`action`, `maxSizeMb`, `onuploaded` props)
 
 #### WBS / Gantt
 - `WBSForm` component: drag-to-create bars, move/resize, zoom levels (全体/月/週/日), assignee picker, member selection
-- `saveWbs` action in `/projects/[id]/+page.server.ts`: bulk replaces all tasks (delete + re-insert)
+- `saveWbs` action in `services/project.ts`: bulk replaces all tasks (delete + re-insert)
 - WBS tab in `/projects/[id]` uses WBSForm with `onSave` wired to `?/saveWbs` via fetch
 
 #### File Uploads (R2)
-- Workflow files: `?/uploadFile` + `?/deleteFile` actions; visible in Files section of workflow detail
-- Project files: `?/uploadFile` + `?/deleteFile` actions; visible in Files tab of project detail
+- 共通 `FileUploadDialog` コンポーネントを使用（workflows/projects 両方で利用）
 - Validation: 10 MB max, allowed MIME types: pdf, png, jpg, gif, webp, doc, docx, xls, xlsx, txt, csv
 - R2 binding: `platform!.env.STORAGE` (`wrangler.jsonc` bucket name: `cork-storage`)
 
 #### No-code Apps
 - `/api/bookmarks` POST endpoint — toggles bookmark
 - App builder: field types: text, textarea, link, number, date, datetime, select, checkbox, radio, user
+- Field type labels react to locale changes via `t().apps.fieldTypes[type]`
 - Bookmarks stored in `app_bookmarks` table
 
+#### Workflows (承認申請)
+- 承認者追加・削除後に `step_order` を自動で連番振り直し
+- 承認・否認: 共有コメント欄 → 確認ダイアログ → 実行
+
+#### Tests
+- **Unit tests** (Vitest, server project): 41テスト — `src/lib/utils/`, `src/lib/server/auth/`
+- **E2E tests** (Playwright): 41テスト — `e2e/` ディレクトリ（auth, dashboard, customers, projects, workflows, apps）
+- 実行: `bun run test:unit --project server --run` / `bun run test:e2e`
+
 ### ❌ Not Yet Implemented
-- E2E tests (Playwright)
+- (なし — 主要機能はすべて実装済み)
 
 ---
 
@@ -262,7 +274,7 @@ Import from `$lib/ui`. Key API notes:
 - `Table`: `cell` snippet receives `(column: Column, row: T)` — not just the cell value
 - `SearchBar`: prop is `onsearch` (not `onsubmit`)
 - `Pagination`: props are `currentPage`, `totalPages`, `onpagechange`
-- `Sidebar`: requires `primaryNavItems` and `secondaryNavItems` as props; exports `NavItem` type
+- `Sidebar`: requires `primaryNavItems` and `secondaryNavItems` as props; exports `NavItem` type（テーマ切替はSettingsページに移動済み）
 - `WBSForm`: props `accounts`, `initial`, `holidays`, `onSave`, `onCancel`; import type via `import type { WBSFormData } from '$lib/ui/WBSForm.svelte'`
 
 ### Database
