@@ -7,6 +7,7 @@
 		Eye, EyeOff, Link, User, OctagonAlert
 	} from '@lucide/svelte';
 	import { ConfirmDialog } from '$lib/ui';
+	import { t } from '$lib/i18n';
 	import { FIELD_TYPE_LABELS } from '$lib/domain/apps/types';
 	import type { AppField, FieldType } from '$lib/domain/apps/types';
 	import type { PageData } from './$types';
@@ -95,22 +96,22 @@
 
 	<!-- Top bar -->
 	<div class="topbar">
-		<a href="/apps/{data.app.id}" class="back-link"><ArrowLeft size={16} /> Back</a>
+		<a href="/apps/{data.app.id}" class="back-link"><ArrowLeft size={16} /> {t().common.back}</a>
 		<div class="app-name-wrap">
 			<input
 				class="app-name-input"
 				name="name"
 				bind:value={appName}
-				placeholder="App name"
+				placeholder={t().apps.name}
 				required
 			/>
 		</div>
 		<div class="topbar-actions">
 			{#if saved}
-				<span class="saved-hint">Saved!</span>
+				<span class="saved-hint">{t().apps.saved}</span>
 			{/if}
 			<button type="submit" class="save-btn">
-				<Save size={15} /> Save
+				<Save size={15} /> {t().common.save}
 			</button>
 			<button type="button" class="delete-btn-top" onclick={() => (showDeleteDialog = true)}>
 				<Trash2 size={14} />
@@ -124,7 +125,7 @@
 	<div class="build-body">
 		<!-- Left: field palette -->
 		<div class="palette">
-			<div class="palette-title">Field types</div>
+			<div class="palette-title">{t().apps.fieldTypesPanel}</div>
 			{#each paletteItems as item (item.type)}
 				<button type="button" class="palette-item" onclick={() => addField(item.type)}>
 					<item.icon size={14} />
@@ -138,7 +139,7 @@
 			{#if fields.length === 0}
 				<div class="canvas-empty">
 					<Plus size={24} />
-					<p>Add fields from the left panel</p>
+					<p>{t().apps.addFromPanel}</p>
 				</div>
 			{:else}
 				{#each fields as field, i (field.id)}
@@ -155,7 +156,7 @@
 						ondrop={onDrop}
 					>
 						<span class="drag-handle"><GripVertical size={14} /></span>
-						<span class="field-label">{field.label || '(no label)'}</span>
+						<span class="field-label">{field.label || t().apps.noLabel}</span>
 						<span class="field-type-tag">{FIELD_TYPE_LABELS[field.type]}</span>
 						{#if !field.show_in_list}
 							<EyeOff size={13} class="eye-icon" />
@@ -180,28 +181,28 @@
 		<div class="field-settings">
 			{#if selectedField}
 				{@const sf = selectedField}
-				<div class="settings-title">Field settings</div>
+				<div class="settings-title">{t().apps.fieldSettings}</div>
 
 				<div class="settings-field">
-					<label class="settings-label" for="sf-label">Label</label>
+					<label class="settings-label" for="sf-label">{t().apps.fieldLabel}</label>
 					<input
 						id="sf-label"
 						class="settings-input"
 						type="text"
 						bind:value={fields[fields.findIndex((f) => f.id === sf.id)].label}
-						placeholder="Field label"
+						placeholder={t().apps.fieldLabelPlaceholder}
 					/>
 				</div>
 
 				{#if sf.type !== 'checkbox'}
 					<div class="settings-field">
-						<label class="settings-label" for="sf-placeholder">Placeholder</label>
+						<label class="settings-label" for="sf-placeholder">{t().apps.fieldPlaceholder}</label>
 						<input
 							id="sf-placeholder"
 							class="settings-input"
 							type="text"
 							bind:value={fields[fields.findIndex((f) => f.id === sf.id)].placeholder}
-							placeholder="Hint text..."
+							placeholder={t().apps.hintTextPlaceholder}
 						/>
 					</div>
 				{/if}
@@ -212,20 +213,20 @@
 							type="checkbox"
 							bind:checked={fields[fields.findIndex((f) => f.id === sf.id)].required}
 						/>
-						Required
+						{t().common.required}
 					</label>
 					<label class="toggle-row">
 						<input
 							type="checkbox"
 							bind:checked={fields[fields.findIndex((f) => f.id === sf.id)].show_in_list}
 						/>
-						Show in list view
+						{t().apps.showInList}
 					</label>
 				</div>
 
 				{#if hasOptions(sf.type)}
 					<div class="settings-field">
-						<div class="settings-label">Options</div>
+						<div class="settings-label">{t().apps.options}</div>
 						{#each sf.options ?? [] as opt (opt.id)}
 							<div class="option-row">
 								<input
@@ -234,7 +235,7 @@
 									bind:value={fields[fields.findIndex((f) => f.id === sf.id)].options![
 										(sf.options ?? []).findIndex((o) => o.id === opt.id)
 									].label}
-									placeholder="Option label"
+									placeholder={t().apps.optionLabelPlaceholder}
 								/>
 								<button
 									type="button"
@@ -247,14 +248,14 @@
 							</div>
 						{/each}
 						<button type="button" class="add-opt-btn" onclick={() => addOption(sf)}>
-							<Plus size={13} /> Add option
+							<Plus size={13} /> {t().apps.addOption}
 						</button>
 					</div>
 				{/if}
 			{:else}
 				<div class="settings-empty">
 					<OctagonAlert size={20} />
-					<p>Select a field to edit its settings</p>
+					<p>{t().apps.selectField}</p>
 				</div>
 			{/if}
 		</div>
@@ -263,9 +264,9 @@
 
 <ConfirmDialog
 	open={showDeleteDialog}
-	title="Delete app"
-	message="This will permanently delete the app and all its records. This cannot be undone."
-	confirmLabel="Delete app"
+	title={t().apps.delete}
+	message={t().apps.deleteConfirm}
+	confirmLabel={t().apps.delete}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';

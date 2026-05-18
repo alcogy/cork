@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Card } from '$lib/ui';
 	import { ACTIVITY_TYPE_LABELS } from '$lib/domain/customer/types';
+	import { t } from '$lib/i18n';
 	import {
 		Users,
 		Activity,
@@ -17,13 +18,13 @@
 	let { data }: { data: PageData } = $props();
 
 	const stats = $derived([
-		{ label: 'Customers', value: data.stats.customers, icon: Users, color: 'blue' },
-		{ label: 'Activities', value: data.stats.activities, icon: Activity, color: 'green' },
-		{ label: 'Schedules', value: data.stats.schedules, icon: CalendarDays, color: 'orange' },
-		{ label: 'Projects', value: data.stats.projects, icon: FolderKanban, color: 'purple' },
-		{ label: 'Approvals', value: data.stats.workflows, icon: CheckSquare, color: 'teal' },
-		{ label: 'WBS Projects', value: data.stats.wbs, icon: GanttChartSquare, color: 'red' },
-		{ label: 'Apps', value: data.stats.apps, icon: AppWindow, color: 'indigo' }
+		{ label: t().dashboard.stats.customers, value: data.stats.customers, icon: Users, color: 'blue' },
+		{ label: t().dashboard.stats.activities, value: data.stats.activities, icon: Activity, color: 'green' },
+		{ label: t().dashboard.stats.schedules, value: data.stats.schedules, icon: CalendarDays, color: 'orange' },
+		{ label: t().dashboard.stats.projects, value: data.stats.projects, icon: FolderKanban, color: 'purple' },
+		{ label: t().dashboard.stats.workflows, value: data.stats.workflows, icon: CheckSquare, color: 'teal' },
+		{ label: t().dashboard.stats.wbs, value: data.stats.wbs, icon: GanttChartSquare, color: 'red' },
+		{ label: t().dashboard.stats.apps, value: data.stats.apps, icon: AppWindow, color: 'indigo' }
 	]);
 
 	let scheduleView = $state(data.scheduleView);
@@ -38,11 +39,11 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard — Cork</title>
+	<title>{t().dashboard.title} — Cork</title>
 </svelte:head>
 
 <div class="dashboard">
-	<h1 class="page-title">Dashboard</h1>
+	<h1 class="page-title">{t().dashboard.title}</h1>
 
 	<div class="stats-grid">
 		{#each stats as stat (stat.label)}
@@ -57,7 +58,7 @@
 	</div>
 
 	<div class="content-grid">
-		<Card title="Recent Activities">
+		<Card title={t().dashboard.recentActivities}>
 			{#if data.recentActivities.length > 0}
 				<div class="list">
 					{#each data.recentActivities as activity (activity.id)}
@@ -77,26 +78,26 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No activities yet.</p>
+				<p class="empty">{t().dashboard.noActivities}</p>
 			{/if}
 		</Card>
 
 		<!-- Schedules card with Upcoming/Past toggle -->
 		<div class="card-with-toggle">
 			<div class="card-header-row">
-				<span class="card-title">Schedules</span>
+				<span class="card-title">{t().dashboard.schedules}</span>
 				<div class="view-tabs">
 					<button
 						class="view-tab {scheduleView === 'upcoming' ? 'active' : ''}"
 						onclick={() => toggleScheduleView('upcoming')}
 					>
-						Upcoming
+						{t().dashboard.upcoming}
 					</button>
 					<button
 						class="view-tab {scheduleView === 'past' ? 'active' : ''}"
 						onclick={() => toggleScheduleView('past')}
 					>
-						Past
+						{t().dashboard.past}
 					</button>
 				</div>
 			</div>
@@ -120,13 +121,13 @@
 					</div>
 				{:else}
 					<p class="empty">
-						{scheduleView === 'upcoming' ? 'No upcoming schedules.' : 'No past schedules.'}
+						{scheduleView === 'upcoming' ? t().dashboard.noUpcomingSchedules : t().dashboard.noPastSchedules}
 					</p>
 				{/if}
 			</div>
 		</div>
 
-		<Card title="Recent Projects">
+		<Card title={t().dashboard.recentProjects}>
 			{#if data.recentProjects.length > 0}
 				<div class="list">
 					{#each data.recentProjects as project (project.id)}
@@ -145,11 +146,11 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No projects yet.</p>
+				<p class="empty">{t().dashboard.noProjects}</p>
 			{/if}
 		</Card>
 
-		<Card title="Pending Approvals">
+		<Card title={t().dashboard.pendingApprovals}>
 			{#if data.pendingApprovals.length > 0}
 				<div class="list">
 					{#each data.pendingApprovals as approval (approval.id)}
@@ -157,7 +158,7 @@
 							<div class="list-main">
 								<div class="list-title">{approval.workflow?.title ?? 'Unknown'}</div>
 								<div class="list-meta">
-									<span>from {approval.workflow?.requester?.name ?? 'Unknown'}</span>
+									<span>{t().dashboard.from} {approval.workflow?.requester?.name ?? 'Unknown'}</span>
 								</div>
 							</div>
 							<div class="list-date">{formatDate(approval.created_at)}</div>
@@ -165,7 +166,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="empty">No pending approvals.</p>
+				<p class="empty">{t().dashboard.noPendingApprovals}</p>
 			{/if}
 		</Card>
 	</div>

@@ -24,6 +24,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.locals.user = null;
 	}
 
+	const lang = event.cookies.get('cork_lang');
+	event.locals.locale = lang === 'en' || lang === 'ja' ? lang : 'en';
+
 	const publicRoutes = ['/login'];
 	const isPublicRoute = publicRoutes.some((route) => event.url.pathname === route);
 

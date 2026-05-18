@@ -94,7 +94,10 @@
 				class="tab {activeTab === tab ? 'active' : ''}"
 				onclick={() => (activeTab = tab)}
 			>
-				{tab.charAt(0).toUpperCase() + tab.slice(1)}
+				{tab === 'activities' ? t().customer.activities :
+				 tab === 'schedules' ? t().customer.schedules :
+				 tab === 'notes' ? t().customer.notes :
+				 t().customer.contacts}
 				{#if tab === 'activities'}({data.customer.activities.length}){/if}
 				{#if tab === 'schedules'}({data.customer.schedules.length}){/if}
 				{#if tab === 'notes'}({data.customer.notes.length}){/if}

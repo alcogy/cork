@@ -15,6 +15,7 @@ declare global {
 				name: string;
 				role: 'admin' | 'general';
 			} | null;
+			locale: 'en' | 'ja';
 		}
 
 		// interface Error {}

@@ -15,7 +15,10 @@ let locale: Locale = $state('en');
 
 if (browser) {
 	const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
-	if (saved === 'en' || saved === 'ja') locale = saved;
+	if (saved === 'en' || saved === 'ja') {
+		locale = saved;
+		document.documentElement.lang = saved;
+	}
 }
 
 export function getLocale(): Locale {
@@ -24,7 +27,11 @@ export function getLocale(): Locale {
 
 export function setLocale(l: Locale) {
 	locale = l;
-	if (browser) localStorage.setItem(STORAGE_KEY, l);
+	if (browser) {
+		localStorage.setItem(STORAGE_KEY, l);
+		document.documentElement.lang = l;
+		document.cookie = `${STORAGE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax`;
+	}
 }
 
 export function t() {

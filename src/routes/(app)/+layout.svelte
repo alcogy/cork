@@ -2,7 +2,7 @@
 	import { Sidebar, ConfirmDialog } from '$lib/ui';
 	import type { NavItem } from '$lib/ui';
 	import { getTheme, setTheme } from '$lib/theme.svelte';
-	import { t } from '$lib/i18n';
+	import { t, setLocale, type Locale } from '$lib/i18n';
 	import type { LayoutData } from './$types';
 	import {
 		LayoutDashboard,
@@ -18,6 +18,9 @@
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
 
+	// Initialize locale from server cookie (prevents language FOUC on SSR)
+	setLocale(data.locale as Locale);
+
 	let showSignOutConfirm = $state(false);
 
 	// Reactive: re-derives when locale changes
@@ -27,12 +30,12 @@
 		{ href: '/projects', label: t().nav.projects, icon: FolderKanban },
 		{ href: '/workflows', label: t().nav.workflows, icon: CheckSquare },
 		{ href: '/apps', label: t().nav.apps, icon: AppWindow },
-		{ href: '/accounts', label: t().nav.accounts, icon: Shield, adminOnly: true },
-		{ href: '/settings', label: t().nav.settings, icon: Settings, adminOnly: true }
+		{ href: '/accounts', label: t().nav.accounts, icon: Shield, adminOnly: true }
 	]);
 
 	const secondaryNavItems = $derived<NavItem[]>([
 		{ href: '/profile', label: t().nav.profile, icon: CircleUser },
+		{ href: '/settings', label: t().nav.settings, icon: Settings, adminOnly: true },
 		{
 			href: '/logout',
 			label: t().nav.signOut,

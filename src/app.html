@@ -4,6 +4,17 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<!-- Prevent FOUC: apply theme and locale before first paint -->
+		<script>
+			(function () {
+				try {
+					var theme = localStorage.getItem('theme') || 'system';
+					document.documentElement.setAttribute('data-theme', theme);
+					var lang = localStorage.getItem('cork_lang') || 'en';
+					document.documentElement.lang = lang;
+				} catch (_) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

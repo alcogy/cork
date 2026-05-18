@@ -21,9 +21,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-xs);
+		width: 100%;
 	}
 
 	.textarea {
+		width: 100%;
+		box-sizing: border-box;
 		min-height: 100px;
 		padding: var(--space-sm) var(--space-md);
 		background-color: var(--color-input-bg);

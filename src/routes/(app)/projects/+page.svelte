@@ -45,7 +45,7 @@
 
 	<SearchBar
 		bind:value={search}
-		placeholder="Search projects..."
+		placeholder={t().project.searchPlaceholder}
 		onsearch={navigate}
 	/>
 
@@ -69,7 +69,7 @@
 							{/if}
 							{#if project.end_date}
 								<span class="separator">·</span>
-								<span>Due {formatDate(project.end_date)}</span>
+								<span>{t().project.due} {formatDate(project.end_date)}</span>
 							{/if}
 						</div>
 					</div>

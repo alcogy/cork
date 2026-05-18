@@ -4,6 +4,7 @@ export { default as Textarea } from './Textarea.svelte';
 export { default as Label } from './Label.svelte';
 export { default as Card } from './Card.svelte';
 export { default as Modal } from './Modal.svelte';
+export { default as FileUploadDialog } from './FileUploadDialog.svelte';
 export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as Table } from './Table.svelte';
 export { default as Pagination } from './Pagination.svelte';

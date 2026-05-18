@@ -115,12 +115,12 @@
 		<div class="empty-state">
 			{#if bookmarkFilter}
 				<Bookmark size={32} />
-				<p>No bookmarked apps.</p>
-				<Button variant="secondary" size="sm" onclick={toggleBookmarkFilter}>Show all apps</Button>
+				<p>{t().apps.noBookmarks}</p>
+				<Button variant="secondary" size="sm" onclick={toggleBookmarkFilter}>{t().apps.showAll}</Button>
 			{:else}
-				<p>No apps yet. Create your first app to get started.</p>
+				<p>{t().apps.noApps}</p>
 				<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-					<Plus size={14} /> Create an app
+					<Plus size={14} /> {t().apps.new}
 				</Button>
 			{/if}
 		</div>

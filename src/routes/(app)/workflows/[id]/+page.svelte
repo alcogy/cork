@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Textarea } from '$lib/ui';
+	import { Button, Textarea, FileUploadDialog } from '$lib/ui';
 	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/domain/workflow/types';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
@@ -11,6 +11,7 @@
 	let { data }: { data: PageData } = $props();
 
 	let saving = $state(false);
+	let showUploadDialog = $state(false);
 
 	function enh() {
 		return () => {
@@ -79,7 +80,7 @@
 		<div class="main-col">
 			{#if wf.description}
 				<div class="section">
-					<h3>Description</h3>
+					<h3>{t().workflow.description}</h3>
 					<p class="description">{wf.description}</p>
 				</div>
 			{/if}
@@ -87,8 +88,8 @@
 			<!-- Approver Setup (draft only) -->
 			{#if wf.status === 'draft' && (data.isRequester || data.isAdmin)}
 				<div class="section approver-setup">
-					<h3>Approval steps</h3>
-					<p class="section-hint">Set who needs to approve this request, in order.</p>
+					<h3>{t().workflow.approvalSteps}</h3>
+					<p class="section-hint">{t().workflow.approvalHint}</p>
 
 					<div class="approver-list">
 						{#each wf.approvals as approval (approval.id)}
@@ -105,20 +106,20 @@
 							</div>
 						{/each}
 						{#if wf.approvals.length === 0}
-							<p class="empty-approvers">No approvers set yet. Add at least one approver before submitting.</p>
+							<p class="empty-approvers">{t().workflow.noApprovers}</p>
 						{/if}
 					</div>
 
 					{#if availableApprovers.length > 0}
 						<form method="POST" action="?/addApprover" use:enhance={enh()} class="add-approver-row">
 							<select name="approver_id" class="select-input" required aria-label="Select approver">
-								<option value="">Select approver...</option>
+								<option value="">{t().workflow.selectApprover}</option>
 								{#each availableApprovers as account (account.id)}
 									<option value={account.id}>{account.name}</option>
 								{/each}
 							</select>
 							<Button type="submit" variant="primary" size="sm" disabled={saving}>
-								<UserPlus size={14} /> Add approver
+								<UserPlus size={14} /> {t().workflow.addApprover}
 							</Button>
 						</form>
 					{/if}
@@ -126,7 +127,7 @@
 			{:else if wf.approvals.length > 0}
 				<!-- Approval steps status (non-draft) -->
 				<div class="section">
-					<h3>Approval steps</h3>
+					<h3>{t().workflow.approvalSteps}</h3>
 					<div class="approval-steps">
 						{#each wf.approvals as step (step.id)}
 							<div class="step-row">
@@ -185,10 +186,11 @@
 			<div class="section">
 				<h3><Paperclip size={14} /> Files ({data.files.length})</h3>
 				{#if data.isRequester || data.isAdmin}
-					<form method="POST" action="?/uploadFile" enctype="multipart/form-data" use:enhance={enh()} class="upload-form">
-						<input type="file" name="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" />
-						<Button type="submit" variant="secondary" size="sm" disabled={saving}>Upload</Button>
-					</form>
+					<div class="files-header">
+						<Button variant="secondary" size="sm" onclick={() => (showUploadDialog = true)}>
+							<Paperclip size={13} /> Upload
+						</Button>
+					</div>
 				{/if}
 				{#if data.files.length > 0}
 					<ul class="file-list">
@@ -209,16 +211,16 @@
 						{/each}
 					</ul>
 				{:else}
-					<p class="empty">No files attached.</p>
+					<p class="empty">{t().workflow.noFiles}</p>
 				{/if}
 			</div>
 
 			<!-- Comments -->
 			<div class="section">
-				<h3>Comments ({wf.comments.length})</h3>
+				<h3>{t().workflow.comments} ({wf.comments.length})</h3>
 				<form method="POST" action="?/addComment" use:enhance={enh()} class="comment-form">
-					<Textarea name="content" placeholder="Add a comment..." rows={3} />
-					<Button type="submit" variant="secondary" size="sm" disabled={saving}>Post comment</Button>
+					<Textarea name="content" placeholder={t().project.commentPlaceholder} rows={3} />
+					<Button type="submit" variant="secondary" size="sm" disabled={saving}>{t().workflow.postComment}</Button>
 				</form>
 				<div class="comment-list">
 					{#each wf.comments as comment (comment.id)}
@@ -226,7 +228,7 @@
 							<div class="comment-avatar">{comment.account?.name?.charAt(0).toUpperCase() ?? '?'}</div>
 							<div class="comment-body">
 								<div class="comment-meta">
-									<strong>{comment.account?.name ?? 'Unknown'}</strong>
+									<strong>{comment.account?.name ?? t().common.unknown}</strong>
 									<span>{formatDateTime(comment.created_at)}</span>
 								</div>
 								<p class="comment-content">{comment.content}</p>
@@ -234,7 +236,7 @@
 						</div>
 					{/each}
 					{#if wf.comments.length === 0}
-						<p class="empty">No comments yet.</p>
+						<p class="empty">{t().workflow.noComments}</p>
 					{/if}
 				</div>
 			</div>
@@ -281,6 +283,13 @@
 		</div>
 	</div>
 </div>
+
+<FileUploadDialog
+	bind:open={showUploadDialog}
+	action="?/uploadFile"
+	maxSizeMb={10}
+	onuploaded={() => invalidateAll()}
+/>
 
 <style lang="scss">
 	.page { display: flex; flex-direction: column; gap: var(--space-xl); }
@@ -339,6 +348,7 @@
 	.main-col { display: flex; flex-direction: column; gap: var(--space-xl); }
 	.section { display: flex; flex-direction: column; gap: var(--space-md); h3 { font-size: 0.9375rem; } }
 	.section-hint { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: -var(--space-sm); }
+	.files-header { display: flex; }
 	.description { font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; }
 
 	/* Approver setup */
@@ -533,18 +543,6 @@
 	.meta-row dt { font-size: 0.75rem; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
 
 	.empty { text-align: center; color: var(--color-text-tertiary); padding: var(--space-lg); font-size: 0.875rem; }
-
-	.upload-form {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		margin-bottom: var(--space-md);
-	}
-
-	.file-input {
-		font-size: 0.8125rem;
-		color: var(--color-text-secondary);
-	}
 
 	.file-list {
 		list-style: none;

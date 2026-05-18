@@ -3,6 +3,7 @@
 	import { Plus, Pencil, Trash2, ShieldCheck, User } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -15,12 +16,12 @@
 	let deletingId = $state<string | null>(null);
 	let deleteFormEl = $state<HTMLFormElement | null>(null);
 
-	const columns = [
-		{ key: 'name', label: '名前' },
-		{ key: 'email', label: 'メールアドレス' },
-		{ key: 'role', label: '権限', width: '100px' },
-		{ key: 'created_at', label: '作成日', width: '140px' }
-	];
+	const columns = $derived([
+		{ key: 'name', label: t().account.name },
+		{ key: 'email', label: t().account.email },
+		{ key: 'role', label: t().account.role, width: '100px' },
+		{ key: 'created_at', label: t().common.createdAt, width: '140px' }
+	]);
 
 	function openCreate() {
 		editingAccount = null;
@@ -43,13 +44,13 @@
 </script>
 
 <svelte:head>
-	<title>Accounts — Cork</title>
+	<title>{t().account.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">Accounts</h1>
-		<Button variant="primary" size="sm" onclick={openCreate}><Plus size={14} /> New account</Button>
+		<h1 class="page-title">{t().account.title}</h1>
+		<Button variant="primary" size="sm" onclick={openCreate}><Plus size={14} /> {t().account.new}</Button>
 	</div>
 
 	<Table {columns} rows={data.accounts}>
@@ -57,9 +58,9 @@
 			{#if col.key === 'role'}
 				<span class="role-badge {row.role === 'admin' ? 'role-admin' : 'role-general'}">
 					{#if row.role === 'admin'}
-						<ShieldCheck size={12} /> Admin
+						<ShieldCheck size={12} /> {t().account.roles.admin}
 					{:else}
-						<User size={12} /> General
+						<User size={12} /> {t().account.roles.general}
 					{/if}
 				</span>
 			{:else if col.key === 'created_at'}
@@ -97,9 +98,9 @@
 
 <ConfirmDialog
 	bind:open={showConfirm}
-	title="Delete account"
-	message="このアカウントを削除しますか？この操作は取り消せません。"
-	confirmLabel="Delete"
+	title={t().account.delete}
+	message={t().account.deleteConfirm}
+	confirmLabel={t().common.delete}
 	onconfirm={handleDeleteConfirm}
 />
 

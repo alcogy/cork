@@ -2,6 +2,7 @@
 	import { Button, Input, Label } from '$lib/ui';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { t } from '$lib/i18n';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -21,38 +22,38 @@
 </script>
 
 <svelte:head>
-	<title>Profile — Cork</title>
+	<title>{t().profile.title} — Cork</title>
 </svelte:head>
 
 <div class="page">
-	<h1 class="page-title">Profile</h1>
+	<h1 class="page-title">{t().profile.title}</h1>
 
 	<div class="profile-grid">
 		<section class="card">
-			<h2 class="section-title">Account info</h2>
+			<h2 class="section-title">{t().profile.accountInfo}</h2>
 
 			{#if form?.error}
 				<p class="error-msg">{form.error}</p>
 			{/if}
 			{#if form?.success}
-				<p class="success-msg">Saved successfully.</p>
+				<p class="success-msg">{t().profile.savedSuccessfully}</p>
 			{/if}
 
 			<form method="POST" action="?/update" use:enhance={enh()}>
 				<div class="fields">
 					<div class="field">
-						<Label for="prof-name" required>Name</Label>
+						<Label for="prof-name" required>{t().profile.name}</Label>
 						<Input
 							id="prof-name"
 							name="name"
 							value={data.account?.name ?? ''}
-							placeholder="Your name"
+							placeholder={t().profile.namePlaceholder}
 							required
 						/>
 					</div>
 
 					<div class="field">
-						<Label for="prof-email">Email</Label>
+						<Label for="prof-email">{t().profile.email}</Label>
 						<Input
 							id="prof-email"
 							name="email"
@@ -60,56 +61,56 @@
 							value={data.account?.email ?? ''}
 							disabled
 						/>
-						<p class="field-note">Email cannot be changed here. Contact an admin.</p>
+						<p class="field-note">{t().profile.emailNote}</p>
 					</div>
 				</div>
 
 				<div class="divider"></div>
 
-				<h3 class="subsection-title">Change password</h3>
+				<h3 class="subsection-title">{t().profile.changePassword}</h3>
 				<div class="fields">
 					<div class="field">
-						<Label for="prof-current-pw">Current password</Label>
+						<Label for="prof-current-pw">{t().profile.currentPassword}</Label>
 						<Input
 							id="prof-current-pw"
 							name="current_password"
 							type="password"
-							placeholder="Required to set a new password"
+							placeholder={t().profile.currentPasswordHint}
 						/>
 					</div>
 
 					<div class="field">
-						<Label for="prof-new-pw">New password</Label>
+						<Label for="prof-new-pw">{t().profile.newPassword}</Label>
 						<Input
 							id="prof-new-pw"
 							name="new_password"
 							type="password"
-							placeholder="Leave blank to keep current"
+							placeholder={t().profile.newPasswordHint}
 						/>
 					</div>
 				</div>
 
 				<div class="form-actions">
 					<Button type="submit" variant="primary" disabled={saving}>
-						{saving ? 'Saving…' : 'Save changes'}
+						{saving ? t().common.saving : t().common.saveChanges}
 					</Button>
 				</div>
 			</form>
 		</section>
 
 		<section class="card info-card">
-			<h2 class="section-title">Account details</h2>
+			<h2 class="section-title">{t().profile.accountDetails}</h2>
 			<dl class="detail-list">
 				<div class="detail-row">
-					<dt>Role</dt>
+					<dt>{t().account.role}</dt>
 					<dd>
 						<span class="role-badge {data.account?.role === 'admin' ? 'role-admin' : 'role-general'}">
-							{data.account?.role === 'admin' ? 'Admin' : 'General'}
+							{data.account?.role === 'admin' ? t().account.roles.admin : t().account.roles.general}
 						</span>
 					</dd>
 				</div>
 				<div class="detail-row">
-					<dt>Member since</dt>
+					<dt>{t().profile.memberSince}</dt>
 					<dd>{data.account?.created_at?.slice(0, 10) ?? '—'}</dd>
 				</div>
 			</dl>

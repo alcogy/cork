@@ -74,7 +74,7 @@
 		</div>
 	{:else}
 		<div class="empty-state">
-			<p>No approval requests yet.</p>
+			<p>{t().workflow.noRequests}</p>
 		</div>
 	{/if}
 </div>

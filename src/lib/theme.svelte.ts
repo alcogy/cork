@@ -9,6 +9,7 @@ if (browser) {
 	if (saved === 'light' || saved === 'dark' || saved === 'system') {
 		theme = saved;
 	}
+	document.documentElement.setAttribute('data-theme', theme);
 }
 
 export function getTheme(): Theme {
@@ -19,5 +20,6 @@ export function setTheme(next: Theme) {
 	theme = next;
 	if (browser) {
 		localStorage.setItem('theme', next);
+		document.documentElement.setAttribute('data-theme', next);
 	}
 }

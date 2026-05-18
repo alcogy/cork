@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import Button from './Button.svelte';
 	import { enhance } from '$app/forms';
+	import { t } from '$lib/i18n';
 
 	interface AccountData {
 		id?: string;
@@ -24,7 +25,7 @@
 	const actionUrl = $derived(isEdit ? '?/update' : '?/create');
 </script>
 
-<Modal bind:open title={isEdit ? 'アカウント編集' : 'アカウント新規作成'}>
+<Modal bind:open title={isEdit ? t().account.edit : t().account.new}>
 	<form
 		class="editor-form"
 		method="POST"
@@ -44,50 +45,47 @@
 		{/if}
 
 		<div class="field">
-			<Label for="acct-name" required>名前</Label>
+			<Label for="acct-name" required>{t().account.name}</Label>
 			<Input
 				id="acct-name"
 				name="name"
 				value={account?.name || ''}
-				placeholder="氏名を入力"
 				required
 			/>
 		</div>
 
 		<div class="field">
-			<Label for="acct-email" required>メールアドレス</Label>
+			<Label for="acct-email" required>{t().account.email}</Label>
 			<Input
 				id="acct-email"
 				name="email"
 				type="email"
 				value={account?.email || ''}
-				placeholder="user@company.com"
 				required
 			/>
 		</div>
 
 		<div class="field">
-			<Label for="acct-role" required>権限</Label>
+			<Label for="acct-role" required>{t().account.role}</Label>
 			<select id="acct-role" name="role" class="select" value={account?.role || 'general'}>
-				<option value="general">一般</option>
-				<option value="admin">管理者</option>
+				<option value="general">{t().account.roles.general}</option>
+				<option value="admin">{t().account.roles.admin}</option>
 			</select>
 		</div>
 
 		<div class="field">
-			<Label for="acct-password">{isEdit ? '新しいパスワード（任意）' : 'パスワード'}</Label>
+			<Label for="acct-password">{isEdit ? t().account.newPassword : t().account.password}</Label>
 			<Input
 				id="acct-password"
 				name="password"
 				type="password"
-				placeholder={isEdit ? '空欄の場合は変更されません' : 'パスワードを設定'}
 				required={!isEdit}
 			/>
 		</div>
 
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (open = false)}>キャンセル</Button>
-			<Button type="submit" variant="primary">{isEdit ? '保存' : '作成'}</Button>
+			<Button type="button" variant="secondary" onclick={() => (open = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary">{isEdit ? t().common.save : t().common.create}</Button>
 		</div>
 	</form>
 </Modal>

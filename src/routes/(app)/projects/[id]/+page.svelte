@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm } from '$lib/ui';
+	import { Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm, FileUploadDialog } from '$lib/ui';
 	import type { WBSFormData } from '$lib/ui/WBSForm.svelte';
 	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/domain/project/types';
 	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDate, formatDateTime } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -16,6 +17,7 @@
 	let showEdit = $state(false);
 	let showAddTask = $state(false);
 	let showCreateWbs = $state(false);
+	let showUploadDialog = $state(false);
 	let saving = $state(false);
 
 	function enh(opts: { close?: () => void } = {}) {
@@ -30,11 +32,12 @@
 		};
 	}
 
-	const kanbanCols = [
-		{ key: 'todo', label: 'To Do', color: '#94a3b8' },
-		{ key: 'in_progress', label: 'In Progress', color: '#f59e0b' },
-		{ key: 'done', label: 'Done', color: '#10b981' }
-	] as const;
+	type KanbanKey = 'todo' | 'in_progress' | 'done';
+	const kanbanCols = $derived([
+		{ key: 'todo' as KanbanKey, label: t().project.kanban.todo, color: '#94a3b8' },
+		{ key: 'in_progress' as KanbanKey, label: t().project.kanban.inProgress, color: '#f59e0b' },
+		{ key: 'done' as KanbanKey, label: t().project.kanban.done, color: '#10b981' }
+	]);
 
 	const tasksByStatus = $derived(() => {
 		const tasks = data.wbs?.tasks ?? [];
@@ -85,7 +88,7 @@
 	<div class="tabs">
 		{#each (['overview', 'kanban', 'wbs', 'members', 'files', 'activity'] as Tab[]) as tab (tab)}
 			<button class="tab {activeTab === tab ? 'active' : ''}" onclick={() => (activeTab = tab)}>
-				{tab === 'overview' ? 'Overview' : tab === 'kanban' ? 'Kanban' : tab === 'wbs' ? 'WBS' : tab === 'members' ? `Members (${data.project.members.length})` : tab === 'files' ? `Files (${data.files.length})` : 'Activity'}
+				{tab === 'overview' ? t().project.tabs.overview : tab === 'kanban' ? t().project.tabs.kanban : tab === 'wbs' ? t().project.tabs.wbs : tab === 'members' ? `${t().project.members} (${data.project.members.length})` : tab === 'files' ? `${t().project.files} (${data.files.length})` : t().project.tabs.activity}
 			</button>
 		{/each}
 	</div>
@@ -95,32 +98,32 @@
 		<div class="tab-content">
 			<div class="overview-grid">
 				<div class="info-card">
-					<h3>Details</h3>
+					<h3>{t().project.details}</h3>
 					<dl class="detail-list">
 						{#if data.project.category}
 							<div class="detail-row">
-								<dt>Category</dt>
+								<dt>{t().project.category}</dt>
 								<dd>{data.project.category.label}</dd>
 							</div>
 						{/if}
 						{#if data.project.start_date}
 							<div class="detail-row">
-								<dt>Start date</dt>
+								<dt>{t().project.startDate}</dt>
 								<dd>{formatDate(data.project.start_date)}</dd>
 							</div>
 						{/if}
 						{#if data.project.end_date}
 							<div class="detail-row">
-								<dt>Due date</dt>
+								<dt>{t().project.endDate}</dt>
 								<dd>{formatDate(data.project.end_date)}</dd>
 							</div>
 						{/if}
 						<div class="detail-row">
-							<dt>Created by</dt>
+							<dt>{t().project.createdBy}</dt>
 							<dd>{data.project.creator?.name ?? '—'}</dd>
 						</div>
 						<div class="detail-row">
-							<dt>Created</dt>
+							<dt>{t().common.createdAt}</dt>
 							<dd>{formatDate(data.project.created_at)}</dd>
 						</div>
 					</dl>
@@ -128,25 +131,25 @@
 
 				{#if data.project.description}
 					<div class="info-card">
-						<h3>Description</h3>
+						<h3>{t().project.description}</h3>
 						<p class="description">{data.project.description}</p>
 					</div>
 				{/if}
 
 				<div class="info-card">
-					<h3>Quick stats</h3>
+					<h3>{t().project.quickStats}</h3>
 					<div class="stats-row">
 						<div class="stat">
 							<span class="stat-value">{data.project.members.length}</span>
-							<span class="stat-label">Members</span>
+							<span class="stat-label">{t().project.members}</span>
 						</div>
 						<div class="stat">
 							<span class="stat-value">{data.wbs?.tasks.length ?? 0}</span>
-							<span class="stat-label">Tasks</span>
+							<span class="stat-label">{t().progress.tasks}</span>
 						</div>
 						<div class="stat">
 							<span class="stat-value">{data.wbs?.tasks.filter((t) => t.status === 'done').length ?? 0}</span>
-							<span class="stat-label">Done</span>
+							<span class="stat-label">{t().project.kanban.done}</span>
 						</div>
 					</div>
 				</div>
@@ -160,7 +163,7 @@
 			{#if data.wbs}
 				<div class="kanban-actions">
 					<Button variant="primary" size="sm" onclick={() => (showAddTask = true)}>
-						<Plus size={14} /> Add task
+						<Plus size={14} /> {t().project.kanban.addTask}
 					</Button>
 				</div>
 				<div class="kanban-board">
@@ -203,7 +206,7 @@
 									</div>
 								{/each}
 								{#if tasksByStatus()[col.key].length === 0}
-									<div class="kanban-empty">No tasks</div>
+									<div class="kanban-empty">{t().project.noTasks}</div>
 								{/if}
 							</div>
 						</div>
@@ -211,9 +214,9 @@
 				</div>
 			{:else}
 				<div class="wbs-empty">
-					<p>No WBS set up yet. Create a WBS to use Kanban.</p>
+					<p>{t().project.noWbsKanban}</p>
 					<Button variant="primary" size="sm" onclick={() => { activeTab = 'wbs'; }}>
-						Go to WBS tab
+						{t().project.goToWbs}
 					</Button>
 				</div>
 			{/if}
@@ -250,9 +253,9 @@
 				/>
 			{:else}
 				<div class="wbs-empty">
-					<p>No WBS created yet for this project.</p>
+					<p>{t().project.noWbs}</p>
 					<Button variant="primary" size="sm" onclick={() => (showCreateWbs = true)}>
-						<Plus size={14} /> Create WBS
+						<Plus size={14} /> {t().project.wbsCreate}
 					</Button>
 				</div>
 			{/if}
@@ -263,12 +266,12 @@
 	{#if activeTab === 'members'}
 		<div class="tab-content">
 			<div class="members-header">
-				<h3>Project members</h3>
+				<h3>{t().project.projectMembers}</h3>
 				{#if data.availableAccounts.length > 0}
 					<form method="POST" action="?/addMember" use:enhance={enh()}>
 						<div class="add-member-row">
 							<select name="account_id" class="select-input" required aria-label="Select member to add">
-								<option value="">Select member...</option>
+								<option value="">{t().project.selectMember}</option>
 								{#each data.availableAccounts as account (account.id)}
 									<option value={account.id}>{account.name}</option>
 								{/each}
@@ -295,20 +298,21 @@
 					</div>
 				{/each}
 				{#if data.project.members.length === 0}
-					<p class="empty">No members assigned yet.</p>
+					<p class="empty">{t().project.noMembers}</p>
 				{/if}
 			</div>
 		</div>
 	{/if}
 
-	<!-- Activity Tab -->
+	<!-- Files Tab -->
 	{#if activeTab === 'files'}
 		<div class="tab-content">
 			{#if data.isOwner}
-				<form method="POST" action="?/uploadFile" enctype="multipart/form-data" use:enhance={enh()} class="upload-form">
-					<input type="file" name="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" />
-					<Button type="submit" variant="secondary" size="sm" disabled={saving}>Upload</Button>
-				</form>
+				<div class="files-header">
+					<Button variant="secondary" size="sm" onclick={() => (showUploadDialog = true)}>
+						<Paperclip size={13} /> Upload
+					</Button>
+				</div>
 			{/if}
 			{#if data.files.length > 0}
 				<ul class="file-list">
@@ -329,7 +333,7 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="empty">No files attached yet.</p>
+				<p class="empty">{t().project.noFiles}</p>
 			{/if}
 		</div>
 	{/if}
@@ -337,9 +341,9 @@
 	{#if activeTab === 'activity'}
 		<div class="tab-content">
 			<form method="POST" action="?/logActivity" use:enhance={enh()} class="activity-form">
-				<Textarea name="content" placeholder="Add a comment or note..." rows={3} />
+				<Textarea name="content" placeholder={t().project.commentPlaceholder} rows={3} />
 				<Button type="submit" variant="primary" size="sm" disabled={saving}>
-					<MessageSquare size={14} /> Add comment
+					<MessageSquare size={14} /> {t().project.addComment}
 				</Button>
 			</form>
 			<div class="activity-list">
@@ -348,7 +352,7 @@
 						<div class="activity-avatar">{act.account?.name?.charAt(0).toUpperCase() ?? '?'}</div>
 						<div class="activity-body">
 							<div class="activity-meta">
-								<strong>{act.account?.name ?? 'Unknown'}</strong>
+								<strong>{act.account?.name ?? t().common.unknown}</strong>
 								<span>{formatDateTime(act.created_at)}</span>
 							</div>
 							<p class="activity-content">{act.content}</p>
@@ -356,7 +360,7 @@
 					</div>
 				{/each}
 				{#if data.project.activities.length === 0}
-					<p class="empty">No activity yet.</p>
+					<p class="empty">{t().project.noActivity}</p>
 				{/if}
 			</div>
 		</div>
@@ -364,20 +368,20 @@
 </div>
 
 <!-- Edit Project Modal -->
-<Modal open={showEdit} title="Edit project" onclose={() => (showEdit = false)}>
+<Modal open={showEdit} title={t().project.edit} onclose={() => (showEdit = false)}>
 	<form method="POST" action="?/update" use:enhance={enh({ close: () => (showEdit = false) })}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="title" required>Project name</Label>
+				<Label for="title" required>{t().project.name}</Label>
 				<Input id="title" name="title" value={data.project.title} required />
 			</div>
 			<div class="field">
-				<Label for="description">Description</Label>
+				<Label for="description">{t().project.description}</Label>
 				<Textarea id="description" name="description" rows={3} value={data.project.description ?? ''} />
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="status_id">Status</Label>
+					<Label for="status_id">{t().project.status}</Label>
 					<select id="status_id" name="status_id" class="select-input">
 						<option value="">— None —</option>
 						{#each data.statuses as s (s.id)}
@@ -386,7 +390,7 @@
 					</select>
 				</div>
 				<div class="field">
-					<Label for="priority">Priority</Label>
+					<Label for="priority">{t().project.priority}</Label>
 					<select id="priority" name="priority" class="select-input">
 						{#each PROJECT_PRIORITIES as p (p)}
 							<option value={p} selected={data.project.priority === p}>{PROJECT_PRIORITY_LABELS[p]}</option>
@@ -396,58 +400,58 @@
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="start_date" required>Start date</Label>
+					<Label for="start_date" required>{t().project.startDate}</Label>
 					<Input id="start_date" name="start_date" type="date" value={data.project.start_date ?? ''} required />
 				</div>
 				<div class="field">
-					<Label for="end_date" required>End date</Label>
+					<Label for="end_date" required>{t().project.endDate}</Label>
 					<Input id="end_date" name="end_date" type="date" value={data.project.end_date ?? ''} required />
 				</div>
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showEdit = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Save changes</Button>
+			<Button type="button" variant="secondary" onclick={() => (showEdit = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().project.saveChanges}</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Create WBS Modal -->
-<Modal open={showCreateWbs} title="Create WBS for this project" onclose={() => (showCreateWbs = false)}>
+<Modal open={showCreateWbs} title={t().project.wbsCreate} onclose={() => (showCreateWbs = false)}>
 	<form method="POST" action="?/createWbs" use:enhance={enh({ close: () => (showCreateWbs = false) })}>
 		<div class="form-fields">
 			<p class="wbs-info">
-				WBS will be created using the project's dates:<br />
+				{t().project.wbsInfo}<br />
 				<strong>{data.project.start_date ?? '—'} → {data.project.end_date ?? '—'}</strong>
 			</p>
 			{#if !data.project.start_date || !data.project.end_date}
-				<p class="wbs-warn">⚠ Project start date and end date must be set first.</p>
+				<p class="wbs-warn">⚠ {t().project.wbsDatesRequired}</p>
 			{/if}
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showCreateWbs = false)}>Cancel</Button>
+			<Button type="button" variant="secondary" onclick={() => (showCreateWbs = false)}>{t().common.cancel}</Button>
 			<Button type="submit" variant="primary" disabled={saving || !data.project.start_date || !data.project.end_date}>
-				Create WBS
+				{t().project.wbsCreate}
 			</Button>
 		</div>
 	</form>
 </Modal>
 
 <!-- Add Task Modal -->
-<Modal open={showAddTask} title="Add task" onclose={() => (showAddTask = false)}>
+<Modal open={showAddTask} title={t().project.kanban.addTask} onclose={() => (showAddTask = false)}>
 	<form method="POST" action="?/addTask" use:enhance={enh({ close: () => (showAddTask = false) })}>
 		{#if data.wbs}
 			<input type="hidden" name="wbs_id" value={data.wbs.id} />
 		{/if}
 		<div class="form-fields">
 			<div class="field">
-				<Label for="task_name" required>Task name</Label>
+				<Label for="task_name" required>{t().project.taskName}</Label>
 				<Input id="task_name" name="name" required />
 			</div>
 			<div class="field">
-				<Label for="task_assignee">Assignee</Label>
+				<Label for="task_assignee">{t().progress.assignee}</Label>
 				<select id="task_assignee" name="assignee_id" class="select-input">
-					<option value="">Unassigned</option>
+					<option value="">{t().project.kanban.unassigned}</option>
 					{#each data.project.members as m (m.account_id)}
 						<option value={m.account_id}>{m.account.name}</option>
 					{/each}
@@ -455,21 +459,28 @@
 			</div>
 			<div class="field-row">
 				<div class="field">
-					<Label for="task_start">Planned start</Label>
+					<Label for="task_start">{t().progress.plannedStart}</Label>
 					<Input id="task_start" name="planned_start" type="date" />
 				</div>
 				<div class="field">
-					<Label for="task_end">Planned end</Label>
+					<Label for="task_end">{t().progress.plannedEnd}</Label>
 					<Input id="task_end" name="planned_end" type="date" />
 				</div>
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddTask = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Add task</Button>
+			<Button type="button" variant="secondary" onclick={() => (showAddTask = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().project.kanban.addTask}</Button>
 		</div>
 	</form>
 </Modal>
+
+<FileUploadDialog
+	bind:open={showUploadDialog}
+	action="?/uploadFile"
+	maxSizeMb={10}
+	onuploaded={() => invalidateAll()}
+/>
 
 <style lang="scss">
 	.page { display: flex; flex-direction: column; gap: var(--space-xl); }
@@ -827,14 +838,9 @@
 
 	.empty { text-align: center; color: var(--color-text-tertiary); padding: var(--space-xl); }
 
-	.upload-form {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
+	.files-header {
 		margin-bottom: var(--space-md);
 	}
-
-	.file-input { font-size: 0.8125rem; color: var(--color-text-secondary); }
 
 	.file-list {
 		list-style: none;

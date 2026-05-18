@@ -66,7 +66,7 @@
 		<div class="empty-state">
 			<p>{t().apps.noFields}</p>
 			<a href="/apps/{data.app.id}/build" class="btn-link">
-				<Button variant="primary" size="sm"><Wrench size={14} /> Go to Build</Button>
+				<Button variant="primary" size="sm"><Wrench size={14} /> {t().apps.goToBuild}</Button>
 			</a>
 		</div>
 	{:else if data.records.length === 0}
@@ -122,7 +122,7 @@
 						<Textarea id="f-{field.id}" name={field.id} rows={3} placeholder={field.placeholder} required={field.required} />
 					{:else if field.type === 'select' && field.options}
 						<select id="f-{field.id}" name={field.id} class="select-input" required={field.required}>
-							<option value="">Select...</option>
+							<option value="">{t().apps.selectOption}</option>
 							{#each field.options as opt (opt.id)}
 								<option value={opt.label}>{opt.label}</option>
 							{/each}
@@ -144,8 +144,8 @@
 			{/each}
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showForm = false)}>Cancel</Button>
-			<Button type="submit" variant="primary" disabled={saving}>Create</Button>
+			<Button type="button" variant="secondary" onclick={() => (showForm = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={saving}>{t().common.create}</Button>
 		</div>
 	</form>
 </Modal>
