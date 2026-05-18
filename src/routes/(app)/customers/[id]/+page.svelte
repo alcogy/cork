@@ -6,7 +6,7 @@
 		CUSTOMER_STATUS_LABELS,
 		CUSTOMER_STATUSES,
 		NOTE_COLORS
-	} from '$lib/domain/customer/types';
+	} from '$lib/types/customer';
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';

@@ -4,7 +4,7 @@ import { and, eq, like, or } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { objectsToCsv } from '$lib/utils/csv';
 import { writeAuditLog } from '$lib/server/audit';
-import { CUSTOMER_STATUS_LABELS } from '$lib/domain/customer/types';
+import { CUSTOMER_STATUS_LABELS } from '$lib/types/customer';
 
 export const GET: RequestHandler = async ({ platform, url, locals }) => {
 	const db = drizzle(platform!.env.DB, { schema });

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, SearchBar, Pagination, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/domain/project/types';
+	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/types/project';
 	import { Plus, Trash2 } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';

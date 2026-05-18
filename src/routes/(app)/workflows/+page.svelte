@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { WORKFLOW_STATUS_LABELS, WORKFLOW_STATUSES, WORKFLOW_PRIORITIES, WORKFLOW_PRIORITY_LABELS } from '$lib/domain/workflow/types';
+	import { WORKFLOW_STATUS_LABELS, WORKFLOW_STATUSES, WORKFLOW_PRIORITIES, WORKFLOW_PRIORITY_LABELS } from '$lib/types/workflow';
 	import { Plus } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';

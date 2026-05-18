@@ -131,10 +131,11 @@
 	}
 
 	.card {
-		background: var(--color-surface);
+		background-color: var(--color-bg-elevated);
 		border: 1px solid var(--color-border-light);
 		border-radius: var(--radius-lg);
 		padding: var(--space-xl);
+		margin-top: var(--space-lg);
 	}
 
 	.section-title {

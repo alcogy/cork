@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm, FileUploadDialog } from '$lib/ui';
 	import type { WBSFormData } from '$lib/ui/WBSForm.svelte';
-	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/domain/project/types';
+	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/types/project';
 	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';

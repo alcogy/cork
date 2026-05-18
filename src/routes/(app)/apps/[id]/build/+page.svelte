@@ -8,8 +8,8 @@
 	} from '@lucide/svelte';
 	import { ConfirmDialog } from '$lib/ui';
 	import { t } from '$lib/i18n';
-	import { FIELD_TYPE_LABELS } from '$lib/domain/apps/types';
-	import type { AppField, FieldType } from '$lib/domain/apps/types';
+	import { FIELD_TYPE_LABELS } from '$lib/types/apps';
+	import type { AppField, FieldType } from '$lib/types/apps';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

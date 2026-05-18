@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, Textarea, FileUploadDialog } from '$lib/ui';
-	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/domain/workflow/types';
+	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/types/workflow';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';

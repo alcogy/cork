@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Card } from '$lib/ui';
-	import { ACTIVITY_TYPE_LABELS } from '$lib/domain/customer/types';
+	import { ACTIVITY_TYPE_LABELS } from '$lib/types/customer';
 	import { t } from '$lib/i18n';
 	import {
 		Users,

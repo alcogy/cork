@@ -1,56 +1,22 @@
-import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
-import * as schema from '$lib/server/db/schema';
-import type { AppDef, AppField } from '$lib/domain/apps/types';
+import { makeCtx } from '$lib/services';
+import { getAppDef, saveAppDefinition, deleteAppAdmin } from '$lib/services/apps';
 
 export const load: PageServerLoad = async ({ platform, params, locals }) => {
-	if (locals.user?.role !== 'admin') throw redirect(303, `/apps/${params.id}`);
-
-	const db = drizzle(platform!.env.DB, { schema });
-	const app = await db.query.apps.findFirst({ where: eq(schema.apps.id, params.id) });
-	if (!app) throw error(404, 'App not found');
-
-	const fields: AppField[] = JSON.parse(app.fields);
-	const appDef: AppDef = {
-		id: app.id,
-		name: app.name,
-		description: app.description,
-		fields,
-		is_published: app.is_published,
-		created_at: app.created_at,
-		updated_at: app.updated_at
-	};
-
-	return { app: appDef };
+	return getAppDef(makeCtx(platform!, locals), params.id);
 };
 
 export const actions = {
-	save: async ({ request, platform, params }) => {
-		const data = await request.formData();
-		const name = data.get('name')?.toString().trim();
-		const description = data.get('description')?.toString().trim() ?? '';
-		const fieldsJson = data.get('fields')?.toString() ?? '[]';
-
-		if (!name) return fail(400, { error: 'App name is required' });
-
-		const db = drizzle(platform!.env.DB, { schema });
-		await db.update(schema.apps).set({
-			name,
-			description,
-			fields: fieldsJson,
-			updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19)
-		}).where(eq(schema.apps.id, params.id));
-
-		return { success: true };
+	save: async ({ request, platform, params, locals }) => {
+		const f = await request.formData();
+		return saveAppDefinition(makeCtx(platform!, locals), params.id, {
+			name: f.get('name')?.toString().trim() ?? '',
+			description: f.get('description')?.toString().trim() ?? '',
+			fields: f.get('fields')?.toString() ?? '[]'
+		});
 	},
 
 	delete: async ({ platform, params, locals }) => {
-		if (locals.user?.role !== 'admin') throw error(403, 'Forbidden');
-
-		const db = drizzle(platform!.env.DB, { schema });
-		await db.delete(schema.apps).where(eq(schema.apps.id, params.id));
-		throw redirect(303, '/apps');
+		return deleteAppAdmin(makeCtx(platform!, locals), params.id);
 	}
 } satisfies Actions;

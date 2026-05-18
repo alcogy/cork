@@ -107,18 +107,25 @@ Cork is an open-source integrated business management platform built on Cloudfla
 
 ---
 
-## Directory Structure (DDD-inspired)
+## Directory Structure
 
 ```
 src/
   lib/
-    domain/              # Business domain types (user-customizable)
-      shared/types.ts
-      customer/types.ts  # CustomerStatus, ActivityType, NoteColor, etc.
-      project/types.ts   # ProjectPriority, ProjectMemberRole, etc.
-      workflow/types.ts  # WorkflowStatus, WorkflowPriority, ApprovalStatus
-      progress/types.ts  # WBS, WBSTask types
-      apps/types.ts      # FieldType, AppField, AppDef, AppSummary
+    types/               # TypeScript型定義・定数 (ドメインモデル)
+      shared.ts          # PaginationParams, User, Role
+      customer.ts        # CustomerStatus, ActivityType, NoteColor, etc.
+      project.ts         # ProjectPriority, ProjectMemberRole, etc.
+      workflow.ts        # WorkflowStatus, WorkflowPriority, ApprovalStatus
+      progress.ts        # WBS, WBSTask types
+      apps.ts            # FieldType, AppField, AppDef, AppSummary
+    services/            # アプリケーションサービス層 (業務ロジック, server-only)
+      index.ts           # ServiceCtx型 + makeCtx() ファクトリ関数
+      customer.ts        # listCustomers, createCustomer, updateCustomer, ...
+      project.ts         # listProjects, getProject, createProject, ...
+      workflow.ts        # listWorkflows, getWorkflow, submitWorkflow, ...
+      apps.ts            # listApps, getApp, createRecord, ...
+      account.ts         # listAccounts, createAccount, updateAccount, ...
     server/
       db/
         schema.ts        # All Drizzle tables + relations
@@ -137,7 +144,7 @@ src/
     api/
       bookmarks/+server.ts  # POST toggle bookmark
     (app)/               # Authenticated route group
-      +layout.server.ts  # { user } → page data
+      +layout.server.ts  # { user, locale } → page data
       +layout.svelte     # App shell: Sidebar + main content
       +page.*            # Dashboard
       customers/
@@ -156,6 +163,51 @@ src/
     deploy.yml           # GitHub Actions: push to main → build + migrate + deploy
 deploy.sh                # One-command Cloudflare setup + deploy
 ```
+
+---
+
+## Architecture Policy
+
+### Layer Responsibilities
+
+| Layer | Path | Role |
+|---|---|---|
+| **Types** | `src/lib/types/` | TypeScript型定義・定数のみ。ロジックは持たない |
+| **Services** | `src/lib/services/` | 業務ロジック（DB操作・R2・監査ログ）。server-only |
+| **Routes (server)** | `+page.server.ts` | フォームデータの解析 → サービス呼び出し → 返却のみ |
+| **Routes (svelte)** | `+page.svelte` | UIコンポーネントと最小限のステート管理のみ |
+
+### Service Pattern
+
+サービス関数は `ServiceCtx` を第一引数に受け取る:
+
+```ts
+import { makeCtx } from '$lib/services';
+import { createCustomer } from '$lib/services/customer';
+
+// +page.server.ts (thin glue)
+export const actions = {
+  create: async ({ request, platform, locals }) => {
+    const f = await request.formData();
+    return createCustomer(makeCtx(platform!, locals, request), {
+      name: f.get('name')?.toString().trim() ?? '',
+    });
+  }
+};
+
+// $lib/services/customer.ts (business logic)
+export async function createCustomer(ctx: ServiceCtx, data: {...}) {
+  const { db, env, user, request } = ctx;
+  // DB操作・バリデーション・監査ログをここに書く
+}
+```
+
+**規則:**
+- `ServiceCtx` = `{ db, env, user, request? }` — `makeCtx(platform!, locals, request?)` で生成
+- サービスは `$lib/server/` 以下のモジュールのみインポート可（client-side コードは不可）
+- バリデーションエラーは `fail()` で返す、存在しないリソースは `error()` でスロー
+- すべての write 操作で `writeAuditLog()` を呼ぶ
+- 新しいドメインを追加する場合: `types/` に型定義 → `services/` に業務ロジック → `+page.server.ts` で薄く繋ぐ
 
 ---
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, Table, SearchBar, Pagination, Modal, Input, Label } from '$lib/ui';
-	import { CUSTOMER_STATUS_LABELS, CUSTOMER_STATUSES } from '$lib/domain/customer/types';
+	import { CUSTOMER_STATUS_LABELS, CUSTOMER_STATUSES } from '$lib/types/customer';
 	import { Plus, Download } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
