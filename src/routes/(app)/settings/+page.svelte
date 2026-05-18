@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Button, Input, Label } from '$lib/ui';
-	import { Plus, Trash2, Globe } from '@lucide/svelte';
+	import { Plus, Trash2, Globe, Sun, Moon, Monitor, Palette } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { t, getLocale, setLocale, LOCALES, type Locale } from '$lib/i18n';
+	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -34,6 +35,44 @@
 <div class="page">
 	<h1 class="page-title">{t().settings.title}</h1>
 	<p class="page-desc">{t().settings.adminOnly}</p>
+
+	<!-- Appearance -->
+	<section class="settings-section">
+		<h2><Palette size={16} /> {t().settings.appearance}</h2>
+		<div class="settings-card">
+			<div class="setting-row">
+				<div class="setting-info">
+					<div class="setting-label">{t().settings.theme}</div>
+					<div class="setting-desc">{t().settings.themeDesc}</div>
+				</div>
+				<div class="setting-control">
+					<div class="locale-buttons">
+						<button
+							type="button"
+							class="locale-btn {getTheme() === 'light' ? 'active' : ''}"
+							onclick={() => setTheme('light')}
+						>
+							<Sun size={14} /> {t().settings.themeLight}
+						</button>
+						<button
+							type="button"
+							class="locale-btn {getTheme() === 'dark' ? 'active' : ''}"
+							onclick={() => setTheme('dark')}
+						>
+							<Moon size={14} /> {t().settings.themeDark}
+						</button>
+						<button
+							type="button"
+							class="locale-btn {getTheme() === 'system' ? 'active' : ''}"
+							onclick={() => setTheme('system')}
+						>
+							<Monitor size={14} /> {t().settings.themeSystem}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
 
 	<!-- Language -->
 	<section class="settings-section">

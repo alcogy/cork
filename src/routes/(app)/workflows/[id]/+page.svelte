@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Textarea, FileUploadDialog } from '$lib/ui';
+	import { Button, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
 	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/types/workflow';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
@@ -12,6 +12,24 @@
 
 	let saving = $state(false);
 	let showUploadDialog = $state(false);
+	let decisionComment = $state('');
+	let pendingAction = $state<'approve' | 'reject' | null>(null);
+	let approveFormEl = $state<HTMLFormElement | null>(null);
+	let rejectFormEl = $state<HTMLFormElement | null>(null);
+
+	function confirmApprove() {
+		pendingAction = 'approve';
+	}
+
+	function confirmReject() {
+		pendingAction = 'reject';
+	}
+
+	function executeDecision() {
+		if (pendingAction === 'approve') approveFormEl?.requestSubmit();
+		else if (pendingAction === 'reject') rejectFormEl?.requestSubmit();
+		pendingAction = null;
+	}
 
 	function enh() {
 		return () => {
@@ -164,21 +182,28 @@
 			<!-- Approval Actions (for approvers) -->
 			{#if data.canApprove}
 				<div class="approval-actions">
-					<h3>Your decision</h3>
-					<div class="action-row">
-						<form method="POST" action="?/approve" use:enhance={enh()} class="action-form">
-							<Textarea name="comment" placeholder="Comment (optional)" rows={2} />
-							<Button type="submit" variant="primary" disabled={saving}>
-								<CheckCircle size={16} /> {t().workflow.approve}
-							</Button>
-						</form>
-						<form method="POST" action="?/reject" use:enhance={enh()} class="action-form">
-							<Textarea name="comment" placeholder="Reason for rejection (optional)" rows={2} />
-							<Button type="submit" variant="danger" disabled={saving}>
-								<XCircle size={16} /> {t().workflow.reject}
-							</Button>
-						</form>
+					<h3>{t().workflow.yourDecision}</h3>
+					<Textarea
+						bind:value={decisionComment}
+						placeholder={t().workflow.decisionComment}
+						rows={3}
+					/>
+					<div class="decision-buttons">
+						<Button variant="primary" onclick={confirmApprove} disabled={saving}>
+							<CheckCircle size={16} /> {t().workflow.approve}
+						</Button>
+						<Button variant="danger" onclick={confirmReject} disabled={saving}>
+							<XCircle size={16} /> {t().workflow.reject}
+						</Button>
 					</div>
+
+					<!-- Hidden forms for actual submission -->
+					<form bind:this={approveFormEl} method="POST" action="?/approve" use:enhance={enh()} class="hidden-form">
+						<input type="hidden" name="comment" value={decisionComment} />
+					</form>
+					<form bind:this={rejectFormEl} method="POST" action="?/reject" use:enhance={enh()} class="hidden-form">
+						<input type="hidden" name="comment" value={decisionComment} />
+					</form>
 				</div>
 			{/if}
 
@@ -283,6 +308,24 @@
 		</div>
 	</div>
 </div>
+
+<ConfirmDialog
+	open={pendingAction === 'approve'}
+	title={t().workflow.approveConfirm}
+	message={t().workflow.approveConfirmMessage}
+	confirmLabel={t().workflow.approve}
+	onconfirm={executeDecision}
+	oncancel={() => (pendingAction = null)}
+/>
+
+<ConfirmDialog
+	open={pendingAction === 'reject'}
+	title={t().workflow.rejectConfirm}
+	message={t().workflow.rejectConfirmMessage}
+	confirmLabel={t().workflow.reject}
+	oncancel={() => (pendingAction = null)}
+	onconfirm={executeDecision}
+/>
 
 <FileUploadDialog
 	bind:open={showUploadDialog}
@@ -473,14 +516,12 @@
 		border: 1px solid rgba(180, 83, 9, 0.2);
 	}
 
-	.action-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
+	.decision-buttons {
+		display: flex;
 		gap: var(--space-md);
-		@media (max-width: 640px) { grid-template-columns: 1fr; }
 	}
 
-	.action-form { display: flex; flex-direction: column; gap: var(--space-sm); }
+	.hidden-form { display: none; }
 
 	/* Comments */
 	.comment-form {

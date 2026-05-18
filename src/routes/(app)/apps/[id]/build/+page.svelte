@@ -8,7 +8,6 @@
 	} from '@lucide/svelte';
 	import { ConfirmDialog } from '$lib/ui';
 	import { t } from '$lib/i18n';
-	import { FIELD_TYPE_LABELS } from '$lib/types/apps';
 	import type { AppField, FieldType } from '$lib/types/apps';
 	import type { PageData } from './$types';
 
@@ -43,7 +42,7 @@
 
 	function addField(type: FieldType) {
 		const id = crypto.randomUUID();
-		fields = [...fields, { id, type, label: FIELD_TYPE_LABELS[type], required: false, show_in_list: true }];
+		fields = [...fields, { id, type, label: t().apps.fieldTypes[type], required: false, show_in_list: true }];
 		selectedFieldId = id;
 	}
 
@@ -129,7 +128,7 @@
 			{#each paletteItems as item (item.type)}
 				<button type="button" class="palette-item" onclick={() => addField(item.type)}>
 					<item.icon size={14} />
-					{FIELD_TYPE_LABELS[item.type]}
+					{t().apps.fieldTypes[item.type]}
 				</button>
 			{/each}
 		</div>
@@ -157,7 +156,7 @@
 					>
 						<span class="drag-handle"><GripVertical size={14} /></span>
 						<span class="field-label">{field.label || t().apps.noLabel}</span>
-						<span class="field-type-tag">{FIELD_TYPE_LABELS[field.type]}</span>
+						<span class="field-type-tag">{t().apps.fieldTypes[field.type]}</span>
 						{#if !field.show_in_list}
 							<EyeOff size={13} class="eye-icon" />
 						{/if}

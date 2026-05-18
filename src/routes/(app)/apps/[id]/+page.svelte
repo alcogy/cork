@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { FIELD_TYPE_LABELS } from '$lib/types/apps';
 	import { ArrowLeft, Plus, Trash2, Wrench } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';

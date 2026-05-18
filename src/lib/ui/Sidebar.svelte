@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { PanelLeftClose, PanelLeftOpen, Sun, Moon, Monitor } from '@lucide/svelte';
+	import { PanelLeftClose, PanelLeftOpen } from '@lucide/svelte';
 
 	export interface NavItem {
 		href: string;
@@ -15,8 +15,6 @@
 		primaryNavItems: NavItem[];
 		secondaryNavItems: NavItem[];
 		role?: 'admin' | 'general';
-		theme?: 'light' | 'dark' | 'system';
-		onthemechange?: (theme: 'light' | 'dark' | 'system') => void;
 		logo?: Snippet;
 	}
 
@@ -24,19 +22,11 @@
 		primaryNavItems,
 		secondaryNavItems,
 		role = 'general',
-		theme = 'system',
-		onthemechange,
 		logo
 	}: Props = $props();
 
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
-
-	const themeOptions = [
-		{ value: 'light' as const, icon: Sun, label: 'Light' },
-		{ value: 'dark' as const, icon: Moon, label: 'Dark' },
-		{ value: 'system' as const, icon: Monitor, label: 'System' }
-	];
 
 	function isActive(href: string): boolean {
 		if (href === '/') return page.url.pathname === '/';
@@ -108,21 +98,6 @@
 		</div>
 	</nav>
 
-	<div class="sidebar-footer">
-		<div class="theme-switcher">
-			{#each themeOptions as opt (opt.value)}
-				<button
-					class="theme-btn"
-					class:active={theme === opt.value}
-					onclick={() => onthemechange?.(opt.value)}
-					aria-label="{opt.label} theme"
-					title={opt.label}
-				>
-					<opt.icon size={14} />
-				</button>
-			{/each}
-		</div>
-	</div>
 </aside>
 
 <style lang="scss">
@@ -155,9 +130,6 @@
 				padding: var(--space-sm);
 			}
 
-			.theme-switcher {
-				flex-direction: column;
-			}
 		}
 	}
 
@@ -225,47 +197,6 @@
 		transition: opacity var(--transition-base);
 	}
 
-	.sidebar-footer {
-		padding: var(--space-sm) var(--space-md);
-		border-top: 1px solid var(--sidebar-border);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-		flex-shrink: 0;
-	}
-
-	.theme-switcher {
-		display: flex;
-		gap: 2px;
-		background-color: var(--sidebar-switcher-bg);
-		border-radius: var(--radius-md);
-		padding: 2px;
-	}
-
-	.theme-btn {
-		flex: 1;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 26px;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: transparent;
-		color: var(--sidebar-text);
-		cursor: pointer;
-		transition:
-			background-color var(--transition-fast),
-			color var(--transition-fast);
-
-		&:hover {
-			color: var(--sidebar-text-active);
-		}
-
-		&.active {
-			background-color: var(--sidebar-switcher-active);
-			color: var(--sidebar-text-active);
-		}
-	}
 
 	.mobile-toggle {
 		display: none;
@@ -312,9 +243,6 @@
 					width: auto;
 				}
 
-				.theme-switcher {
-					flex-direction: row;
-				}
 			}
 		}
 

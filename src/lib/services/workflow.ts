@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { asc, count, desc, eq } from 'drizzle-orm';
+import { asc, count, desc, eq, max } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
 import type { WORKFLOW_STATUSES, WORKFLOW_PRIORITIES } from '$lib/types/workflow';
@@ -123,8 +123,9 @@ export async function addApprover(ctx: ServiceCtx, workflowId: string, approverI
 	const { db } = ctx;
 	if (!approverId) return fail(400, { error: 'Approver is required' });
 
+	// max(step_order) + 1 で正確な次番号を取得（削除後に count がずれていても安全）
 	const [maxStep] = await db
-		.select({ max: count() })
+		.select({ max: max(schema.workflow_approvals.step_order) })
 		.from(schema.workflow_approvals)
 		.where(eq(schema.workflow_approvals.workflow_id, workflowId));
 
@@ -144,8 +145,33 @@ export async function addApprover(ctx: ServiceCtx, workflowId: string, approverI
 }
 
 export async function removeApprover(ctx: ServiceCtx, approvalId: string) {
+	const { db } = ctx;
 	if (!approvalId) return fail(400, { error: 'Invalid request' });
-	await ctx.db.delete(schema.workflow_approvals).where(eq(schema.workflow_approvals.id, approvalId));
+
+	// 削除対象の workflow_id を先に取得
+	const [target] = await db
+		.select({ workflow_id: schema.workflow_approvals.workflow_id })
+		.from(schema.workflow_approvals)
+		.where(eq(schema.workflow_approvals.id, approvalId));
+
+	await db.delete(schema.workflow_approvals).where(eq(schema.workflow_approvals.id, approvalId));
+
+	// 残りのステップを 1 から連番で振り直す
+	if (target?.workflow_id) {
+		const remaining = await db
+			.select({ id: schema.workflow_approvals.id })
+			.from(schema.workflow_approvals)
+			.where(eq(schema.workflow_approvals.workflow_id, target.workflow_id))
+			.orderBy(asc(schema.workflow_approvals.step_order));
+
+		for (let i = 0; i < remaining.length; i++) {
+			await db
+				.update(schema.workflow_approvals)
+				.set({ step_order: i + 1 })
+				.where(eq(schema.workflow_approvals.id, remaining[i].id));
+		}
+	}
+
 	return { success: true };
 }
 
