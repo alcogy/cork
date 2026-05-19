@@ -56,36 +56,6 @@ The script automatically:
 
 ---
 
-## GitHub Actions (CI/CD)
-
-Every push to `main` triggers automatic deployment.
-
-### Setup
-
-1. **GitHub Secrets** — add in repo Settings → Secrets → Actions:
-
-   | Secret | Where to find |
-   |---|---|
-   | `CLOUDFLARE_API_TOKEN` | [Create token](https://dash.cloudflare.com/profile/api-tokens) with Workers:Edit + D1:Edit + R2:Edit |
-   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → right sidebar |
-
-2. **Set real database ID** in `wrangler.jsonc` after first deploy:
-
-   ```bash
-   bunx wrangler d1 list   # copy your DB's UUID
-   ```
-
-   ```jsonc
-   // wrangler.jsonc
-   { "d1_databases": [{ "database_id": "<your-uuid>" }] }
-   ```
-
-3. Push to `main` — GitHub Actions handles the rest.
-
-You can also trigger manually: **Actions → Deploy to Cloudflare → Run workflow**.
-
----
-
 ## Post-Deploy Setup
 
 1. Open the Worker URL shown after deployment
