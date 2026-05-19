@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { fail } from '@sveltejs/kit';
 import { and, count, desc, eq, like, or, sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
@@ -7,6 +8,56 @@ import type { CUSTOMER_STATUSES } from '$lib/types/customer';
 import type { ServiceCtx } from './index';
 
 const PER_PAGE = 30;
+
+const CustomerStatusSchema = z.enum(['active', 'inactive', 'lead']);
+const NoteColorSchema = z.enum(['yellow', 'blue', 'green', 'pink', 'orange']);
+const ActivityTypeSchema = z.enum(['call', 'email', 'meeting', 'note']);
+
+const CreateCustomerSchema = z.object({
+	name: z.string().min(1, 'Company name is required'),
+	email: z.string().nullable().optional(),
+	tel: z.string().nullable().optional(),
+	fax: z.string().nullable().optional(),
+	zipcode: z.string().nullable().optional(),
+	address: z.string().nullable().optional(),
+	status: CustomerStatusSchema.optional()
+});
+
+const UpdateCustomerSchema = z.object({
+	name: z.string().min(1, 'Company name is required'),
+	email: z.string().nullable().optional(),
+	tel: z.string().nullable().optional(),
+	fax: z.string().nullable().optional(),
+	zipcode: z.string().nullable().optional(),
+	address: z.string().nullable().optional(),
+	status: CustomerStatusSchema
+});
+
+const CreateActivitySchema = z.object({
+	type: ActivityTypeSchema,
+	note: z.string().nullable().optional()
+});
+
+const CreateScheduleSchema = z.object({
+	title: z.string().min(1, 'Title is required'),
+	start_at: z.string().min(1, 'Start date is required'),
+	end_at: z.string().nullable().optional(),
+	note: z.string().nullable().optional()
+});
+
+const CreateNoteSchema = z.object({
+	content: z.string().min(1, 'Note content is required'),
+	color: NoteColorSchema.optional()
+});
+
+const CreateContactSchema = z.object({
+	name: z.string().min(1, 'Contact name is required'),
+	email: z.string().nullable().optional(),
+	tel: z.string().nullable().optional(),
+	department: z.string().nullable().optional(),
+	position: z.string().nullable().optional(),
+	note: z.string().nullable().optional()
+});
 
 export async function listCustomers(
 	ctx: ServiceCtx,
@@ -89,24 +140,15 @@ export async function getCustomer(ctx: ServiceCtx, id: string) {
 	});
 }
 
-export async function createCustomer(
-	ctx: ServiceCtx,
-	data: {
-		name: string;
-		email?: string | null;
-		tel?: string | null;
-		fax?: string | null;
-		zipcode?: string | null;
-		address?: string | null;
-		status?: (typeof CUSTOMER_STATUSES)[number];
-	}
-) {
+export async function createCustomer(ctx: ServiceCtx, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.name) return fail(400, { error: 'Company name is required' });
+
+	const r = CreateCustomerSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [customer] = await db
 		.insert(schema.customers)
-		.values({ ...data, status: data.status ?? 'active' })
+		.values({ ...r.data, status: r.data.status ?? 'active' })
 		.returning();
 
 	await writeAuditLog({
@@ -121,25 +163,16 @@ export async function createCustomer(
 	return { success: true };
 }
 
-export async function updateCustomer(
-	ctx: ServiceCtx,
-	id: string,
-	data: {
-		name: string;
-		email?: string | null;
-		tel?: string | null;
-		fax?: string | null;
-		zipcode?: string | null;
-		address?: string | null;
-		status: (typeof CUSTOMER_STATUSES)[number];
-	}
-) {
+export async function updateCustomer(ctx: ServiceCtx, id: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!id || !data.name) return fail(400, { error: 'Invalid request' });
+	if (!id) return fail(400, { error: 'Invalid request' });
+
+	const r = UpdateCustomerSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	await db
 		.update(schema.customers)
-		.set({ ...data, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
+		.set({ ...r.data, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
 		.where(eq(schema.customers.id, id));
 
 	await writeAuditLog({
@@ -206,17 +239,20 @@ export async function importCustomers(ctx: ServiceCtx, file: File, mode: 'append
 	return { success: true };
 }
 
-export async function createActivity(
-	ctx: ServiceCtx,
-	customerId: string,
-	data: { type: 'call' | 'email' | 'meeting' | 'note'; note?: string | null }
-) {
+export async function createActivity(ctx: ServiceCtx, customerId: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.type) return fail(400, { error: 'Activity type is required' });
+
+	const r = CreateActivitySchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [activity] = await db
 		.insert(schema.customer_activities)
-		.values({ customer_id: customerId, account_id: user.id, type: data.type, note: data.note ?? null })
+		.values({
+			customer_id: customerId,
+			account_id: user.id,
+			type: r.data.type,
+			note: r.data.note ?? null
+		})
 		.returning();
 
 	await writeAuditLog({
@@ -245,23 +281,21 @@ export async function deleteActivity(ctx: ServiceCtx, id: string) {
 	return { success: true };
 }
 
-export async function createSchedule(
-	ctx: ServiceCtx,
-	customerId: string,
-	data: { title: string; start_at: string; end_at?: string | null; note?: string | null }
-) {
+export async function createSchedule(ctx: ServiceCtx, customerId: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.title || !data.start_at) return fail(400, { error: 'Title and start date are required' });
+
+	const r = CreateScheduleSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [schedule] = await db
 		.insert(schema.customer_schedules)
 		.values({
 			customer_id: customerId,
 			account_id: user.id,
-			title: data.title,
-			start_at: data.start_at,
-			end_at: data.end_at ?? null,
-			note: data.note ?? null
+			title: r.data.title,
+			start_at: r.data.start_at,
+			end_at: r.data.end_at ?? null,
+			note: r.data.note ?? null
 		})
 		.returning();
 
@@ -291,21 +325,19 @@ export async function deleteSchedule(ctx: ServiceCtx, id: string) {
 	return { success: true };
 }
 
-export async function createNote(
-	ctx: ServiceCtx,
-	customerId: string,
-	data: { content: string; color?: string }
-) {
+export async function createNote(ctx: ServiceCtx, customerId: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.content) return fail(400, { error: 'Note content is required' });
+
+	const r = CreateNoteSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [note] = await db
 		.insert(schema.customer_notes)
 		.values({
 			customer_id: customerId,
 			account_id: user.id,
-			content: data.content,
-			color: (data.color ?? 'yellow') as 'yellow' | 'blue' | 'green' | 'pink' | 'orange'
+			content: r.data.content,
+			color: r.data.color ?? 'yellow'
 		})
 		.returning();
 
@@ -335,24 +367,15 @@ export async function deleteNote(ctx: ServiceCtx, id: string) {
 	return { success: true };
 }
 
-export async function createContact(
-	ctx: ServiceCtx,
-	customerId: string,
-	data: {
-		name: string;
-		email?: string | null;
-		tel?: string | null;
-		department?: string | null;
-		position?: string | null;
-		note?: string | null;
-	}
-) {
+export async function createContact(ctx: ServiceCtx, customerId: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.name) return fail(400, { error: 'Contact name is required' });
+
+	const r = CreateContactSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [contact] = await db
 		.insert(schema.contacts)
-		.values({ customer_id: customerId, ...data })
+		.values({ customer_id: customerId, ...r.data })
 		.returning();
 
 	await writeAuditLog({

@@ -1,8 +1,8 @@
+import { z } from 'zod';
 import { error, fail } from '@sveltejs/kit';
 import { asc, count, desc, eq, like } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
-import type { PROJECT_PRIORITIES } from '$lib/types/project';
 import type { ServiceCtx } from './index';
 
 const PER_PAGE = 30;
@@ -20,6 +20,36 @@ const ALLOWED_FILE_TYPES = [
 	'text/plain',
 	'text/csv'
 ];
+
+const PrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
+const TaskStatusSchema = z.enum(['todo', 'in_progress', 'done']);
+
+const CreateProjectSchema = z.object({
+	title: z.string().min(1, 'Project name is required'),
+	description: z.string().nullable().optional(),
+	status_id: z.number().nullable().optional(),
+	category_id: z.number().nullable().optional(),
+	priority: PrioritySchema.optional(),
+	start_date: z.string().min(1, 'Start date is required'),
+	end_date: z.string().min(1, 'End date is required')
+});
+
+const UpdateProjectSchema = z.object({
+	title: z.string().min(1, 'Title is required'),
+	description: z.string().nullable().optional(),
+	status_id: z.number().nullable().optional(),
+	category_id: z.number().nullable().optional(),
+	priority: PrioritySchema,
+	start_date: z.string().nullable().optional(),
+	end_date: z.string().nullable().optional()
+});
+
+const AddTaskSchema = z.object({
+	name: z.string().min(1, 'Task name is required'),
+	assignee_id: z.string().nullable().optional(),
+	planned_start: z.string().optional(),
+	planned_end: z.string().optional()
+});
 
 export async function listProjects(ctx: ServiceCtx, opts: { search: string; page: number }) {
 	const { db } = ctx;
@@ -102,26 +132,15 @@ export async function getProject(ctx: ServiceCtx, id: string) {
 	};
 }
 
-export async function createProject(
-	ctx: ServiceCtx,
-	data: {
-		title: string;
-		description?: string | null;
-		status_id?: number | null;
-		category_id?: number | null;
-		priority?: (typeof PROJECT_PRIORITIES)[number];
-		start_date: string;
-		end_date: string;
-	}
-) {
+export async function createProject(ctx: ServiceCtx, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.title) return fail(400, { error: 'Project name is required' });
-	if (!data.start_date) return fail(400, { error: 'Start date is required' });
-	if (!data.end_date) return fail(400, { error: 'End date is required' });
+
+	const r = CreateProjectSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [project] = await db
 		.insert(schema.projects)
-		.values({ ...data, priority: data.priority ?? 'medium', created_by: user.id })
+		.values({ ...r.data, priority: r.data.priority ?? 'medium', created_by: user.id })
 		.returning();
 
 	await writeAuditLog({
@@ -135,25 +154,15 @@ export async function createProject(
 	return { success: true };
 }
 
-export async function updateProject(
-	ctx: ServiceCtx,
-	id: string,
-	data: {
-		title: string;
-		description?: string | null;
-		status_id?: number | null;
-		category_id?: number | null;
-		priority: (typeof PROJECT_PRIORITIES)[number];
-		start_date?: string | null;
-		end_date?: string | null;
-	}
-) {
+export async function updateProject(ctx: ServiceCtx, id: string, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.title) return fail(400, { error: 'Title is required' });
+
+	const r = UpdateProjectSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	await db
 		.update(schema.projects)
-		.set({ ...data, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
+		.set({ ...r.data, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
 		.where(eq(schema.projects.id, id));
 
 	await writeAuditLog({
@@ -184,13 +193,17 @@ export async function deleteProject(ctx: ServiceCtx, id: string) {
 
 export async function addMember(ctx: ServiceCtx, projectId: string, accountId: string) {
 	if (!accountId) return fail(400, { error: 'Account is required' });
-	await ctx.db.insert(schema.project_members).values({ project_id: projectId, account_id: accountId, role: 'member' });
+	await ctx.db
+		.insert(schema.project_members)
+		.values({ project_id: projectId, account_id: accountId, role: 'member' });
 	return { success: true };
 }
 
 export async function removeMember(ctx: ServiceCtx, projectId: string, accountId: string) {
 	if (!accountId) return fail(400, { error: 'Invalid request' });
-	await ctx.db.delete(schema.project_members).where(eq(schema.project_members.project_id, projectId));
+	await ctx.db
+		.delete(schema.project_members)
+		.where(eq(schema.project_members.project_id, projectId));
 	return { success: true };
 }
 
@@ -258,30 +271,44 @@ export async function saveWbs(
 		);
 	}
 
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'update', resource_type: 'wbs', resource_id: wbsId });
-	return { success: true };
-}
-
-export async function addTask(
-	ctx: ServiceCtx,
-	wbsId: string,
-	data: { name: string; assignee_id?: string | null; planned_start?: string; planned_end?: string }
-) {
-	if (!wbsId || !data.name) return fail(400, { error: 'WBS ID and task name are required' });
-	await ctx.db.insert(schema.wbs_tasks).values({
-		wbs_id: wbsId,
-		name: data.name,
-		status: 'todo',
-		assignee_id: data.assignee_id ?? null,
-		planned_start: data.planned_start ?? '',
-		planned_end: data.planned_end ?? ''
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'wbs',
+		resource_id: wbsId
 	});
 	return { success: true };
 }
 
-export async function updateTaskStatus(ctx: ServiceCtx, id: string, status: 'todo' | 'in_progress' | 'done') {
-	if (!id || !status) return fail(400, { error: 'Invalid request' });
-	await ctx.db.update(schema.wbs_tasks).set({ status }).where(eq(schema.wbs_tasks.id, id));
+export async function addTask(ctx: ServiceCtx, wbsId: string, data: unknown) {
+	if (!wbsId) return fail(400, { error: 'WBS ID is required' });
+
+	const r = AddTaskSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
+	await ctx.db.insert(schema.wbs_tasks).values({
+		wbs_id: wbsId,
+		name: r.data.name,
+		status: 'todo',
+		assignee_id: r.data.assignee_id ?? null,
+		planned_start: r.data.planned_start ?? '',
+		planned_end: r.data.planned_end ?? ''
+	});
+	return { success: true };
+}
+
+export async function updateTaskStatus(
+	ctx: ServiceCtx,
+	id: string,
+	status: z.infer<typeof TaskStatusSchema>
+) {
+	if (!id) return fail(400, { error: 'Invalid request' });
+
+	const r = TaskStatusSchema.safeParse(status);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
+	await ctx.db.update(schema.wbs_tasks).set({ status: r.data }).where(eq(schema.wbs_tasks.id, id));
 	return { success: true };
 }
 
@@ -300,7 +327,9 @@ export async function uploadProjectFile(ctx: ServiceCtx, projectId: string, file
 	const ext = file.name.split('.').pop() ?? '';
 	const r2_key = `projects/${projectId}/${crypto.randomUUID()}.${ext}`;
 
-	await env.STORAGE.put(r2_key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+	await env.STORAGE.put(r2_key, await file.arrayBuffer(), {
+		httpMetadata: { contentType: file.type }
+	});
 
 	await db.insert(schema.project_files).values({
 		project_id: projectId,
@@ -311,7 +340,13 @@ export async function uploadProjectFile(ctx: ServiceCtx, projectId: string, file
 		uploaded_by: user.id
 	});
 
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'create', resource_type: 'project_file', resource_id: projectId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'create',
+		resource_type: 'project_file',
+		resource_id: projectId
+	});
 	return { success: true };
 }
 
@@ -319,11 +354,20 @@ export async function deleteProjectFile(ctx: ServiceCtx, fileId: string) {
 	const { db, env, user } = ctx;
 	if (!fileId) return fail(400, { error: 'Invalid request' });
 
-	const [file] = await db.select().from(schema.project_files).where(eq(schema.project_files.id, fileId));
+	const [file] = await db
+		.select()
+		.from(schema.project_files)
+		.where(eq(schema.project_files.id, fileId));
 	if (!file) return fail(404, { error: 'File not found' });
 
 	await env.STORAGE.delete(file.r2_key);
 	await db.delete(schema.project_files).where(eq(schema.project_files.id, fileId));
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'delete', resource_type: 'project_file', resource_id: fileId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'delete',
+		resource_type: 'project_file',
+		resource_id: fileId
+	});
 	return { success: true };
 }

@@ -1,8 +1,9 @@
+import { z } from 'zod';
 import { error, fail } from '@sveltejs/kit';
 import { asc, count, desc, eq, max } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
-import type { WORKFLOW_STATUSES, WORKFLOW_PRIORITIES } from '$lib/types/workflow';
+import type { WORKFLOW_STATUSES } from '$lib/types/workflow';
 import type { ServiceCtx } from './index';
 
 const PER_PAGE = 30;
@@ -20,6 +21,18 @@ const ALLOWED_FILE_TYPES = [
 	'text/plain',
 	'text/csv'
 ];
+
+const PrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
+
+const CreateWorkflowSchema = z.object({
+	title: z.string().min(1, 'Title is required'),
+	description: z.string().nullable().optional(),
+	priority: PrioritySchema.optional()
+});
+
+const AddCommentSchema = z.object({
+	content: z.string().min(1, 'Comment is required')
+});
 
 export async function listWorkflows(
 	ctx: ServiceCtx,
@@ -92,20 +105,15 @@ export async function getWorkflow(ctx: ServiceCtx, id: string) {
 	return { workflow, allAccounts, files, isRequester, isAdmin, canApprove };
 }
 
-export async function createWorkflow(
-	ctx: ServiceCtx,
-	data: {
-		title: string;
-		description?: string | null;
-		priority?: (typeof WORKFLOW_PRIORITIES)[number];
-	}
-) {
+export async function createWorkflow(ctx: ServiceCtx, data: unknown) {
 	const { db, env, user, request } = ctx;
-	if (!data.title) return fail(400, { error: 'Title is required' });
+
+	const r = CreateWorkflowSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
 
 	const [workflow] = await db
 		.insert(schema.workflows)
-		.values({ ...data, priority: data.priority ?? 'normal', requester_id: user.id })
+		.values({ ...r.data, priority: r.data.priority ?? 'normal', requester_id: user.id })
 		.returning();
 
 	await writeAuditLog({
@@ -123,7 +131,6 @@ export async function addApprover(ctx: ServiceCtx, workflowId: string, approverI
 	const { db } = ctx;
 	if (!approverId) return fail(400, { error: 'Approver is required' });
 
-	// max(step_order) + 1 で正確な次番号を取得（削除後に count がずれていても安全）
 	const [maxStep] = await db
 		.select({ max: max(schema.workflow_approvals.step_order) })
 		.from(schema.workflow_approvals)
@@ -138,7 +145,10 @@ export async function addApprover(ctx: ServiceCtx, workflowId: string, approverI
 
 	const wf = await db.query.workflows.findFirst({ where: eq(schema.workflows.id, workflowId) });
 	if (wf && !wf.current_approver_id) {
-		await db.update(schema.workflows).set({ current_approver_id: approverId }).where(eq(schema.workflows.id, workflowId));
+		await db
+			.update(schema.workflows)
+			.set({ current_approver_id: approverId })
+			.where(eq(schema.workflows.id, workflowId));
 	}
 
 	return { success: true };
@@ -148,7 +158,6 @@ export async function removeApprover(ctx: ServiceCtx, approvalId: string) {
 	const { db } = ctx;
 	if (!approvalId) return fail(400, { error: 'Invalid request' });
 
-	// 削除対象の workflow_id を先に取得
 	const [target] = await db
 		.select({ workflow_id: schema.workflow_approvals.workflow_id })
 		.from(schema.workflow_approvals)
@@ -156,7 +165,6 @@ export async function removeApprover(ctx: ServiceCtx, approvalId: string) {
 
 	await db.delete(schema.workflow_approvals).where(eq(schema.workflow_approvals.id, approvalId));
 
-	// 残りのステップを 1 から連番で振り直す
 	if (target?.workflow_id) {
 		const remaining = await db
 			.select({ id: schema.workflow_approvals.id })
@@ -175,12 +183,14 @@ export async function removeApprover(ctx: ServiceCtx, approvalId: string) {
 	return { success: true };
 }
 
-export async function addComment(ctx: ServiceCtx, workflowId: string, content: string) {
-	if (!content) return fail(400, { error: 'Comment is required' });
+export async function addComment(ctx: ServiceCtx, workflowId: string, data: unknown) {
+	const r = AddCommentSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
 	await ctx.db.insert(schema.workflow_comments).values({
 		workflow_id: workflowId,
 		account_id: ctx.user.id,
-		content
+		content: r.data.content
 	});
 	return { success: true };
 }
@@ -192,47 +202,93 @@ export async function submitWorkflow(ctx: ServiceCtx, workflowId: string) {
 		with: { approvals: true }
 	});
 	if (!wf) return fail(404, { error: 'Not found' });
-	if (wf.approvals.length === 0) return fail(400, { error: 'Add at least one approver before submitting' });
+	if (wf.approvals.length === 0)
+		return fail(400, { error: 'Add at least one approver before submitting' });
 
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-	await db.update(schema.workflows).set({ status: 'submitted', submitted_at: now, updated_at: now }).where(eq(schema.workflows.id, workflowId));
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'update', resource_type: 'workflow', resource_id: workflowId });
+	await db
+		.update(schema.workflows)
+		.set({ status: 'submitted', submitted_at: now, updated_at: now })
+		.where(eq(schema.workflows.id, workflowId));
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'workflow',
+		resource_id: workflowId
+	});
 	return { success: true };
 }
 
-export async function approveWorkflow(ctx: ServiceCtx, workflowId: string, comment?: string | null) {
+export async function approveWorkflow(
+	ctx: ServiceCtx,
+	workflowId: string,
+	comment?: string | null
+) {
 	const { db, env, user } = ctx;
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
-	await db.update(schema.workflow_approvals)
+	await db
+		.update(schema.workflow_approvals)
 		.set({ status: 'approved', comment: comment ?? null, approved_at: now })
 		.where(eq(schema.workflow_approvals.workflow_id, workflowId));
 
-	await db.update(schema.workflows).set({ status: 'approved', completed_at: now, updated_at: now }).where(eq(schema.workflows.id, workflowId));
+	await db
+		.update(schema.workflows)
+		.set({ status: 'approved', completed_at: now, updated_at: now })
+		.where(eq(schema.workflows.id, workflowId));
 
 	if (comment) {
-		await db.insert(schema.workflow_comments).values({ workflow_id: workflowId, account_id: user.id, content: `[Approved] ${comment}` });
+		await db.insert(schema.workflow_comments).values({
+			workflow_id: workflowId,
+			account_id: user.id,
+			content: `[Approved] ${comment}`
+		});
 	}
 
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'update', resource_type: 'workflow', resource_id: workflowId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'workflow',
+		resource_id: workflowId
+	});
 	return { success: true };
 }
 
-export async function rejectWorkflow(ctx: ServiceCtx, workflowId: string, comment?: string | null) {
+export async function rejectWorkflow(
+	ctx: ServiceCtx,
+	workflowId: string,
+	comment?: string | null
+) {
 	const { db, env, user } = ctx;
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
-	await db.update(schema.workflow_approvals)
+	await db
+		.update(schema.workflow_approvals)
 		.set({ status: 'rejected', comment: comment ?? null, approved_at: now })
 		.where(eq(schema.workflow_approvals.workflow_id, workflowId));
 
-	await db.update(schema.workflows).set({ status: 'rejected', completed_at: now, updated_at: now }).where(eq(schema.workflows.id, workflowId));
+	await db
+		.update(schema.workflows)
+		.set({ status: 'rejected', completed_at: now, updated_at: now })
+		.where(eq(schema.workflows.id, workflowId));
 
 	if (comment) {
-		await db.insert(schema.workflow_comments).values({ workflow_id: workflowId, account_id: user.id, content: `[Rejected] ${comment}` });
+		await db.insert(schema.workflow_comments).values({
+			workflow_id: workflowId,
+			account_id: user.id,
+			content: `[Rejected] ${comment}`
+		});
 	}
 
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'update', resource_type: 'workflow', resource_id: workflowId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'workflow',
+		resource_id: workflowId
+	});
 	return { success: true };
 }
 
@@ -245,7 +301,9 @@ export async function uploadWorkflowFile(ctx: ServiceCtx, workflowId: string, fi
 	const ext = file.name.split('.').pop() ?? '';
 	const r2_key = `workflows/${workflowId}/${crypto.randomUUID()}.${ext}`;
 
-	await env.STORAGE.put(r2_key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+	await env.STORAGE.put(r2_key, await file.arrayBuffer(), {
+		httpMetadata: { contentType: file.type }
+	});
 
 	await db.insert(schema.workflow_files).values({
 		workflow_id: workflowId,
@@ -256,7 +314,13 @@ export async function uploadWorkflowFile(ctx: ServiceCtx, workflowId: string, fi
 		r2_key
 	});
 
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'create', resource_type: 'workflow_file', resource_id: workflowId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'create',
+		resource_type: 'workflow_file',
+		resource_id: workflowId
+	});
 	return { success: true };
 }
 
@@ -264,11 +328,20 @@ export async function deleteWorkflowFile(ctx: ServiceCtx, fileId: string) {
 	const { db, env, user } = ctx;
 	if (!fileId) return fail(400, { error: 'Invalid request' });
 
-	const [file] = await db.select().from(schema.workflow_files).where(eq(schema.workflow_files.id, fileId));
+	const [file] = await db
+		.select()
+		.from(schema.workflow_files)
+		.where(eq(schema.workflow_files.id, fileId));
 	if (!file) return fail(404, { error: 'File not found' });
 
 	await env.STORAGE.delete(file.r2_key);
 	await db.delete(schema.workflow_files).where(eq(schema.workflow_files.id, fileId));
-	await writeAuditLog({ db: env.DB, account_id: user.id, action: 'delete', resource_type: 'workflow_file', resource_id: fileId });
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'delete',
+		resource_type: 'workflow_file',
+		resource_id: fileId
+	});
 	return { success: true };
 }
