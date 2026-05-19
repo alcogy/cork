@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { error, fail } from '@sveltejs/kit';
 import { asc, eq } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
-import { hashPassword, validatePasswordStrength } from '$lib/server/auth/index';
+import { hashPassword, validatePasswordStrength, deleteAllSessions } from '$lib/server/auth/index';
 import { writeAuditLog } from '$lib/server/audit';
 import type { ServiceCtx } from './index';
 
@@ -10,15 +10,15 @@ const RoleSchema = z.enum(['admin', 'general']);
 
 const CreateAccountSchema = z.object({
 	email: z.email({ error: 'Invalid email address' }),
-	name: z.string().min(1, 'Name is required'),
-	password: z.string().min(1, 'Password is required'),
+	name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+	password: z.string().min(1, 'Password is required').max(128, 'Password too long'),
 	role: RoleSchema.default('general')
 });
 
 const UpdateAccountSchema = z.object({
-	name: z.string().min(1, 'Name is required'),
+	name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
 	role: RoleSchema.default('general'),
-	password: z.string().optional()
+	password: z.string().max(128, 'Password too long').optional()
 });
 
 export async function listAccounts(ctx: ServiceCtx) {
@@ -85,6 +85,8 @@ export async function updateAccount(ctx: ServiceCtx, id: string, data: unknown) 
 		const strengthError = validatePasswordStrength(r.data.password);
 		if (strengthError) return fail(400, { error: strengthError });
 		updateData.password_hash = await hashPassword(r.data.password);
+		// Invalidate all sessions for this account when password changes
+		await deleteAllSessions(env.DB, id);
 	}
 
 	await db.update(schema.accounts).set(updateData).where(eq(schema.accounts.id, id));

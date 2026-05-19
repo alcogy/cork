@@ -25,13 +25,13 @@ const ALLOWED_FILE_TYPES = [
 const PrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
 
 const CreateWorkflowSchema = z.object({
-	title: z.string().min(1, 'Title is required'),
-	description: z.string().nullable().optional(),
+	title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+	description: z.string().max(5000, 'Description too long').nullable().optional(),
 	priority: PrioritySchema.optional()
 });
 
 const AddCommentSchema = z.object({
-	content: z.string().min(1, 'Comment is required')
+	content: z.string().min(1, 'Comment is required').max(5000, 'Comment too long')
 });
 
 export async function listWorkflows(

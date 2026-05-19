@@ -14,49 +14,49 @@ const NoteColorSchema = z.enum(['yellow', 'blue', 'green', 'pink', 'orange']);
 const ActivityTypeSchema = z.enum(['call', 'email', 'meeting', 'note']);
 
 const CreateCustomerSchema = z.object({
-	name: z.string().min(1, 'Company name is required'),
-	email: z.string().nullable().optional(),
-	tel: z.string().nullable().optional(),
-	fax: z.string().nullable().optional(),
-	zipcode: z.string().nullable().optional(),
-	address: z.string().nullable().optional(),
+	name: z.string().min(1, 'Company name is required').max(100, 'Name too long'),
+	email: z.string().max(255, 'Email too long').nullable().optional(),
+	tel: z.string().max(50, 'Phone too long').nullable().optional(),
+	fax: z.string().max(50, 'Fax too long').nullable().optional(),
+	zipcode: z.string().max(20, 'Zipcode too long').nullable().optional(),
+	address: z.string().max(500, 'Address too long').nullable().optional(),
 	status: CustomerStatusSchema.optional()
 });
 
 const UpdateCustomerSchema = z.object({
-	name: z.string().min(1, 'Company name is required'),
-	email: z.string().nullable().optional(),
-	tel: z.string().nullable().optional(),
-	fax: z.string().nullable().optional(),
-	zipcode: z.string().nullable().optional(),
-	address: z.string().nullable().optional(),
+	name: z.string().min(1, 'Company name is required').max(100, 'Name too long'),
+	email: z.string().max(255, 'Email too long').nullable().optional(),
+	tel: z.string().max(50, 'Phone too long').nullable().optional(),
+	fax: z.string().max(50, 'Fax too long').nullable().optional(),
+	zipcode: z.string().max(20, 'Zipcode too long').nullable().optional(),
+	address: z.string().max(500, 'Address too long').nullable().optional(),
 	status: CustomerStatusSchema
 });
 
 const CreateActivitySchema = z.object({
 	type: ActivityTypeSchema,
-	note: z.string().nullable().optional()
+	note: z.string().max(5000, 'Note too long').nullable().optional()
 });
 
 const CreateScheduleSchema = z.object({
-	title: z.string().min(1, 'Title is required'),
+	title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
 	start_at: z.string().min(1, 'Start date is required'),
 	end_at: z.string().nullable().optional(),
-	note: z.string().nullable().optional()
+	note: z.string().max(2000, 'Note too long').nullable().optional()
 });
 
 const CreateNoteSchema = z.object({
-	content: z.string().min(1, 'Note content is required'),
+	content: z.string().min(1, 'Note content is required').max(5000, 'Note too long'),
 	color: NoteColorSchema.optional()
 });
 
 const CreateContactSchema = z.object({
-	name: z.string().min(1, 'Contact name is required'),
-	email: z.string().nullable().optional(),
-	tel: z.string().nullable().optional(),
-	department: z.string().nullable().optional(),
-	position: z.string().nullable().optional(),
-	note: z.string().nullable().optional()
+	name: z.string().min(1, 'Contact name is required').max(100, 'Name too long'),
+	email: z.string().max(255, 'Email too long').nullable().optional(),
+	tel: z.string().max(50, 'Phone too long').nullable().optional(),
+	department: z.string().max(100, 'Department too long').nullable().optional(),
+	position: z.string().max(100, 'Position too long').nullable().optional(),
+	note: z.string().max(2000, 'Note too long').nullable().optional()
 });
 
 export async function listCustomers(

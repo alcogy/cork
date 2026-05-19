@@ -7,14 +7,14 @@ import type { AppDef, AppField } from '$lib/types/apps';
 import type { ServiceCtx } from './index';
 
 const CreateAppSchema = z.object({
-	name: z.string().min(1, 'App name is required'),
-	description: z.string().optional()
+	name: z.string().min(1, 'App name is required').max(100, 'Name too long'),
+	description: z.string().max(1000, 'Description too long').optional()
 });
 
 const SaveAppDefSchema = z.object({
-	name: z.string().min(1, 'App name is required'),
-	description: z.string(),
-	fields: z.string().min(1, 'Fields are required')
+	name: z.string().min(1, 'App name is required').max(100, 'Name too long'),
+	description: z.string().max(1000, 'Description too long'),
+	fields: z.string().min(1, 'Fields are required').max(50000, 'Field definition too large')
 });
 
 export async function listApps(ctx: ServiceCtx, opts: { bookmarkOnly: boolean }) {

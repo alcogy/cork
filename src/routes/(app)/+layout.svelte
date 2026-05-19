@@ -65,8 +65,9 @@
 	title={t().auth.signOut}
 	message={t().auth.signOutConfirm}
 	confirmLabel={t().auth.signOut}
-	onconfirm={() => {
-		window.location.href = '/logout';
+	onconfirm={async () => {
+		await fetch('/logout', { method: 'POST' });
+		window.location.href = '/login';
 	}}
 	oncancel={() => (showSignOutConfirm = false)}
 />

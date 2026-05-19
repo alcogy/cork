@@ -25,8 +25,8 @@ const PrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 const TaskStatusSchema = z.enum(['todo', 'in_progress', 'done']);
 
 const CreateProjectSchema = z.object({
-	title: z.string().min(1, 'Project name is required'),
-	description: z.string().nullable().optional(),
+	title: z.string().min(1, 'Project name is required').max(200, 'Title too long'),
+	description: z.string().max(5000, 'Description too long').nullable().optional(),
 	status_id: z.number().nullable().optional(),
 	category_id: z.number().nullable().optional(),
 	priority: PrioritySchema.optional(),
@@ -35,8 +35,8 @@ const CreateProjectSchema = z.object({
 });
 
 const UpdateProjectSchema = z.object({
-	title: z.string().min(1, 'Title is required'),
-	description: z.string().nullable().optional(),
+	title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+	description: z.string().max(5000, 'Description too long').nullable().optional(),
 	status_id: z.number().nullable().optional(),
 	category_id: z.number().nullable().optional(),
 	priority: PrioritySchema,
@@ -45,7 +45,7 @@ const UpdateProjectSchema = z.object({
 });
 
 const AddTaskSchema = z.object({
-	name: z.string().min(1, 'Task name is required'),
+	name: z.string().min(1, 'Task name is required').max(200, 'Task name too long'),
 	assignee_id: z.string().nullable().optional(),
 	planned_start: z.string().optional(),
 	planned_end: z.string().optional()

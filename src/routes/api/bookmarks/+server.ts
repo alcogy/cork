@@ -5,6 +5,12 @@ import * as schema from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
+	// Reject cross-origin requests
+	const origin = request.headers.get('Origin');
+	if (origin && origin !== new URL(request.url).origin) {
+		throw error(403, 'Forbidden');
+	}
+
 	if (!locals.user) throw error(401, 'Unauthorized');
 
 	const { app_id, app_name } = (await request.json()) as { app_id: string; app_name: string };

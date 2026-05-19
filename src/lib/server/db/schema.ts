@@ -22,13 +22,37 @@ export const settings = sqliteTable('settings', {
 	value: text('value')
 });
 
+export const sessions = sqliteTable('sessions', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	account_id: text('account_id')
+		.notNull()
+		.references(() => accounts.id, { onDelete: 'cascade' }),
+	created_at: text('created_at')
+		.notNull()
+		.default(sql`(datetime('now'))`),
+	expires_at: text('expires_at').notNull()
+});
+
+export const login_attempts = sqliteTable('login_attempts', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	ip_address: text('ip_address').notNull(),
+	email: text('email').notNull(),
+	attempted_at: text('attempted_at')
+		.notNull()
+		.default(sql`(datetime('now'))`)
+});
+
 export const audit_logs = sqliteTable('audit_logs', {
 	id: text('id')
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
 	account_id: text('account_id').references(() => accounts.id, { onDelete: 'set null' }),
 	action: text('action', {
-		enum: ['create', 'update', 'delete', 'login', 'logout', 'export', 'import']
+		enum: ['create', 'update', 'delete', 'login', 'login_failed', 'logout', 'export', 'import']
 	}).notNull(),
 	resource_type: text('resource_type').notNull(),
 	resource_id: text('resource_id'),
@@ -584,4 +608,8 @@ export const appRecordRelations = relations(app_records, ({ one }) => ({
 
 export const auditLogRelations = relations(audit_logs, ({ one }) => ({
 	account: one(accounts, { fields: [audit_logs.account_id], references: [accounts.id] })
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+	account: one(accounts, { fields: [sessions.account_id], references: [accounts.id] })
 }));

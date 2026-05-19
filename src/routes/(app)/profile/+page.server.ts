@@ -3,7 +3,12 @@ import type { Actions, PageServerLoad } from './$types';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
-import { hashPassword, verifyPassword, validatePasswordStrength } from '$lib/server/auth/index';
+import {
+	hashPassword,
+	verifyPassword,
+	validatePasswordStrength,
+	deleteAllSessions
+} from '$lib/server/auth/index';
 import { writeAuditLog } from '$lib/server/audit';
 
 export const load: PageServerLoad = async ({ platform, locals }) => {
@@ -37,7 +42,8 @@ export const actions = {
 		};
 
 		if (newPassword) {
-			if (!currentPassword) return fail(400, { error: 'Current password is required to set a new password' });
+			if (!currentPassword)
+				return fail(400, { error: 'Current password is required to set a new password' });
 			const valid = await verifyPassword(currentPassword, account.password_hash);
 			if (!valid) return fail(401, { error: 'Current password is incorrect' });
 
@@ -45,9 +51,14 @@ export const actions = {
 			if (strengthError) return fail(400, { error: strengthError });
 
 			updateData.password_hash = await hashPassword(newPassword);
+			// Invalidate all sessions when password changes
+			await deleteAllSessions(platform!.env.DB, locals.user!.id);
 		}
 
-		await db.update(schema.accounts).set(updateData).where(eq(schema.accounts.id, locals.user!.id));
+		await db
+			.update(schema.accounts)
+			.set(updateData)
+			.where(eq(schema.accounts.id, locals.user!.id));
 
 		await writeAuditLog({
 			db: platform!.env.DB,
