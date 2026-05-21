@@ -49,6 +49,7 @@
 		{primaryNavItems}
 		{secondaryNavItems}
 		role={data.user?.role}
+		bookmarks={data.bookmarks}
 	>
 		{#snippet logo()}
 			<span class="logo-text">Cork</span>

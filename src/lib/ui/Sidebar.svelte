@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { PanelLeftClose, PanelLeftOpen } from '@lucide/svelte';
+	import { PanelLeftClose, PanelLeftOpen, ChevronDown } from '@lucide/svelte';
 
 	export interface NavItem {
 		href: string;
@@ -11,26 +11,38 @@
 		onclick?: () => void;
 	}
 
+	export interface BookmarkItem {
+		app_id: string;
+		app_name: string;
+	}
+
 	interface Props {
 		primaryNavItems: NavItem[];
 		secondaryNavItems: NavItem[];
 		role?: 'admin' | 'general';
 		logo?: Snippet;
+		bookmarks?: BookmarkItem[];
 	}
 
 	let {
 		primaryNavItems,
 		secondaryNavItems,
 		role = 'general',
-		logo
+		logo,
+		bookmarks = []
 	}: Props = $props();
 
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
+	let bookmarksOpen = $state(true);
 
 	function isActive(href: string): boolean {
 		if (href === '/') return page.url.pathname === '/';
 		return page.url.pathname.startsWith(href);
+	}
+
+	function isAppActive(appId: string): boolean {
+		return page.url.pathname.startsWith(`/apps/${appId}`);
 	}
 
 	function closeMobile() {
@@ -63,15 +75,56 @@
 		<div class="nav-group">
 			{#each primaryNavItems as item (item.href)}
 				{#if !item.adminOnly || role === 'admin'}
-					<a
-						href={item.href}
-						class="nav-item"
-						class:active={isActive(item.href)}
-						onclick={closeMobile}
-					>
-						<item.icon size={18} />
-						<span class="nav-label">{item.label}</span>
-					</a>
+					{#if item.href === '/apps' && bookmarks.length > 0 && !collapsed}
+						<!-- Apps with bookmark children -->
+						<div class="bookmark-section">
+							<button
+								type="button"
+								class="nav-item bookmark-header"
+								class:active={isActive(item.href)}
+								onclick={() => (bookmarksOpen = !bookmarksOpen)}
+							>
+								<item.icon size={18} />
+								<span class="nav-label bookmark-label">{item.label}</span>
+								<span class="chevron" class:rotated={bookmarksOpen}>
+									<ChevronDown size={14} />
+								</span>
+							</button>
+
+							{#if bookmarksOpen}
+								<div class="bookmark-list">
+									<a
+										href="/apps"
+										class="bookmark-item bookmark-item--all"
+										class:active={page.url.pathname === '/apps'}
+										onclick={closeMobile}
+									>
+										{item.label}
+									</a>
+									{#each bookmarks as b (b.app_id)}
+										<a
+											href="/apps/{b.app_id}"
+											class="bookmark-item"
+											class:active={isAppActive(b.app_id)}
+											onclick={closeMobile}
+										>
+											{b.app_name}
+										</a>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<a
+							href={item.href}
+							class="nav-item"
+							class:active={isActive(item.href)}
+							onclick={closeMobile}
+						>
+							<item.icon size={18} />
+							<span class="nav-label">{item.label}</span>
+						</a>
+					{/if}
 				{/if}
 			{/each}
 		</div>
@@ -195,6 +248,88 @@
 
 	.nav-label {
 		transition: opacity var(--transition-base);
+	}
+
+	.bookmark-section {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.bookmark-header {
+		border: none;
+		background: none;
+		cursor: pointer;
+		width: 100%;
+		text-align: left;
+
+		.bookmark-label {
+			flex: 1;
+			display: flex;
+			align-items: center;
+		}
+
+		.chevron {
+			flex-shrink: 0;
+			display: flex;
+			align-items: center;
+			color: var(--sidebar-text);
+			transition: transform var(--transition-fast);
+
+			&.rotated { transform: rotate(180deg); }
+		}
+	}
+
+	.bookmark-list {
+		margin-left: 34px;
+		padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		position: relative;
+
+		&::before {
+			content: '';
+			position: absolute;
+			left: -8px;
+			top: 0;
+			height: 100%;
+			width: 1px;
+			background-color: var(--color-border);
+		}
+	}
+
+	.bookmark-item {
+		display: block;
+		padding: var(--space-xs) var(--space-sm);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--sidebar-text);
+		text-decoration: none;
+		border-radius: var(--radius-sm);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		transition:
+			background-color var(--transition-fast),
+			color var(--transition-fast);
+
+		&:hover {
+			background-color: var(--sidebar-hover);
+			color: var(--sidebar-text-active);
+		}
+
+		&.active { color: var(--color-primary); }
+	}
+
+	.bookmark-empty {
+		font-size: 0.75rem;
+		color: var(--sidebar-text);
+		padding: var(--space-xs) var(--space-sm);
+		opacity: 0.6;
+	}
+
+	.bookmark-item--all {
+		font-weight: 600;
 	}
 
 
