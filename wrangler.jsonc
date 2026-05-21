@@ -23,5 +23,22 @@
 			"binding": "STORAGE",
 			"bucket_name": "cork-storage"
 		}
-	]
+	],
+	"send_email": [
+		{
+			"name": "SEND_EMAIL"
+		}
+	],
+	"vars": {
+		"EMAIL_PROVIDER": "resend",
+		"EMAIL_FROM": "",
+		"ALERT_EMAIL_TO": ""
+	}
+	// Secrets (set via `wrangler secret put`):
+	//   RESEND_API_KEY          — Resend API key
+	//   AWS_ACCESS_KEY_ID       — AWS access key (SES)
+	//   AWS_SECRET_ACCESS_KEY   — AWS secret key (SES)
+	//   AWS_REGION              — AWS region e.g. ap-northeast-1 (SES)
+	//   SMTP_API_URL            — HTTP relay endpoint (smtp mode)
+	//   SMTP_API_KEY            — HTTP relay API key (smtp mode)
 }

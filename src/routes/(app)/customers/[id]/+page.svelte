@@ -7,14 +7,14 @@
 		CUSTOMER_STATUSES,
 		NOTE_COLORS
 	} from '$lib/types/customer';
-	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
+	import { ArrowLeft, Plus, Trash2, Mail } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDateTime, formatDate } from '$lib/utils';
 	import { t } from '$lib/i18n';
-	import type { PageData } from './$types';
+	import type { PageData, ActionData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	type Tab = 'activities' | 'schedules' | 'notes' | 'contacts';
 	let activeTab = $state<Tab>('activities');
@@ -24,9 +24,11 @@
 	let showAddSchedule = $state(false);
 	let showAddNote = $state(false);
 	let showAddContact = $state(false);
+	let showMessage = $state(false);
 	let confirmDeleteId = $state<string | null>(null);
 	let confirmDeleteType = $state<string>('');
 	let saving = $state(false);
+	let messageSending = $state(false);
 
 	function withInvalidate(action: string) {
 		return () => {
@@ -40,6 +42,18 @@
 				showAddNote = false;
 				showAddContact = false;
 				saving = false;
+			};
+		};
+	}
+
+	function withMessage() {
+		return () => {
+			messageSending = true;
+			return async ({ result, update }: { result: { type: string }; update: () => Promise<void> }) => {
+				await update();
+				await invalidateAll();
+				messageSending = false;
+				if (result.type === 'success') showMessage = false;
 			};
 		};
 	}
@@ -69,7 +83,14 @@
 				{CUSTOMER_STATUS_LABELS[data.customer.status]}
 			</span>
 		</div>
-		<Button variant="secondary" size="sm" onclick={() => (showEditCustomer = true)}>{t().common.edit}</Button>
+		<div class="header-actions">
+			{#if data.customer.email}
+				<Button variant="secondary" size="sm" onclick={() => (showMessage = true)}>
+					<Mail size={14} /> {t().customer.sendMessage}
+				</Button>
+			{/if}
+			<Button variant="secondary" size="sm" onclick={() => (showEditCustomer = true)}>{t().common.edit}</Button>
+		</div>
 	</div>
 
 	<div class="meta-grid">
@@ -412,6 +433,32 @@
 	</form>
 </Modal>
 
+<!-- Send Message Modal -->
+<Modal open={showMessage} title={t().customer.messageDialog} onclose={() => (showMessage = false)}>
+	<form method="POST" action="?/sendMessage" use:enhance={withMessage()}>
+		<input type="hidden" name="to" value={data.customer.email ?? ''} />
+		<div class="form-grid">
+			<div class="field full">
+				<Label for="msg-subject" required>{t().customer.messageSubject}</Label>
+				<Input id="msg-subject" name="subject" required maxlength={200} />
+			</div>
+			<div class="field full">
+				<Label for="msg-body" required>{t().customer.messageBody}</Label>
+				<Textarea id="msg-body" name="body" rows={6} required />
+			</div>
+		</div>
+		{#if form?.error}
+			<p class="form-error">{form.error}</p>
+		{/if}
+		<div class="form-actions">
+			<Button type="button" variant="secondary" onclick={() => (showMessage = false)}>{t().common.cancel}</Button>
+			<Button type="submit" variant="primary" disabled={messageSending}>
+				<Mail size={14} /> {messageSending ? t().common.loading : t().customer.sendMessage}
+			</Button>
+		</div>
+	</form>
+</Modal>
+
 <style lang="scss">
 	.page {
 		display: flex;
@@ -449,6 +496,18 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-md);
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
+	.form-error {
+		font-size: 0.875rem;
+		color: var(--color-danger);
+		margin: var(--space-sm) 0 0;
 	}
 
 	.status-badge {

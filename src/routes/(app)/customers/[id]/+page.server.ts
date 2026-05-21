@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { makeCtx } from '$lib/services';
 import {
@@ -13,6 +13,7 @@ import {
 	createContact,
 	deleteContact
 } from '$lib/services/customer';
+import { sendCustomerMessage } from '$lib/services/email';
 
 export const load: PageServerLoad = async ({ platform, params, locals }) => {
 	const customer = await getCustomer(makeCtx(platform!, locals), params.id);
@@ -90,5 +91,22 @@ export const actions = {
 	deleteContact: async ({ request, platform, locals }) => {
 		const f = await request.formData();
 		return deleteContact(makeCtx(platform!, locals, request), f.get('id')?.toString() ?? '');
+	},
+
+	sendMessage: async ({ request, platform, params, locals }) => {
+		const f = await request.formData();
+		const ctx = makeCtx(platform!, locals, request);
+
+		const to = f.get('to')?.toString().trim() ?? '';
+		const subject = f.get('subject')?.toString().trim() ?? '';
+		const body = f.get('body')?.toString().trim() ?? '';
+
+		const result = await sendCustomerMessage(ctx, { to, subject, body });
+		if (result.error) return fail(400, { error: result.error });
+
+		// Log as email activity on the customer record
+		await createActivity(ctx, params.id, { type: 'email', note: `[${subject}] ${body.slice(0, 100)}${body.length > 100 ? '…' : ''}` });
+
+		return { success: true, messageSent: true };
 	}
 } satisfies Actions;

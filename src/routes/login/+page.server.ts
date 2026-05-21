@@ -8,6 +8,7 @@ import {
 	createSession
 } from '$lib/server/auth/index';
 import { writeAuditLog } from '$lib/server/audit';
+import { sendAdminAlertFromEnv } from '$lib/services/email';
 import type { Actions, PageServerLoad } from './$types';
 
 const MAX_ATTEMPTS = 10;
@@ -44,7 +45,18 @@ export const actions = {
 				and(eq(schema.login_attempts.email, email), gt(schema.login_attempts.attempted_at, cutoff))
 			);
 
-		if ((attemptRow?.count ?? 0) >= MAX_ATTEMPTS) {
+		const attemptCount = attemptRow?.count ?? 0;
+		if (attemptCount >= MAX_ATTEMPTS) {
+			sendAdminAlertFromEnv(platform!.env, {
+				subject: 'Login rate limit triggered',
+				severity: 'warning',
+				summary: `Account "${email}" has been blocked after ${MAX_ATTEMPTS} failed login attempts.`,
+				details: {
+					Email: email,
+					'IP Address': ip,
+					'Attempts (15 min)': String(attemptCount)
+				}
+			});
 			return fail(429, {
 				error: `Too many login attempts. Please wait ${WINDOW_MINUTES} minutes.`
 			});

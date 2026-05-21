@@ -86,7 +86,13 @@ export const en = {
 		recordsPerPageDesc: 'Number of items shown per page in list views',
 		addStatus: 'Add status',
 		addCategory: 'Add category',
-		adminOnly: 'Admin access only'
+		adminOnly: 'Admin access only',
+		emailNotifications: 'Email notifications',
+		alertEmail: 'Alert email address',
+		alertEmailDesc: 'Receives admin alert emails (login failures, security events). Must be verified in Cloudflare Email Routing.',
+		sendTestEmail: 'Send test email',
+		testEmailSent: 'Test email sent to {email}',
+		noEmailBinding: 'Cloudflare Email binding (SEND_EMAIL) is not configured'
 	},
 	dashboard: {
 		title: 'Dashboard',
@@ -145,7 +151,13 @@ export const en = {
 		addNote: 'Add note',
 		addContact: 'Add contact',
 		exportCsv: 'Export CSV',
-		importCsv: 'Import CSV'
+		importCsv: 'Import CSV',
+		sendMessage: 'Message',
+		messageDialog: 'Send message',
+		messageSubject: 'Subject',
+		messageBody: 'Message',
+		messageSent: 'Message sent',
+		messageNoEmail: 'This customer has no email address'
 	},
 	project: {
 		title: 'Projects',

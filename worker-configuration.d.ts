@@ -8,9 +8,30 @@ declare namespace Cloudflare {
 		STORAGE: R2Bucket;
 		DB: D1Database;
 		ASSETS: Fetcher;
+		SEND_EMAIL: SendEmail;
 		CLOUDFLARE_ACCOUNT_ID: string;
 		CLOUDFLARE_DATABASE_ID: string;
 		CLOUDFLARE_D1_TOKEN: string;
+
+		// ── Email ─────────────────────────────────────────────────────────────
+		/** Which provider to use: 'resend' | 'ses' | 'smtp' (default: 'resend') */
+		EMAIL_PROVIDER: string;
+		/** From address shown on all outgoing emails */
+		EMAIL_FROM: string;
+		/** Admin alert destination address */
+		ALERT_EMAIL_TO: string;
+
+		// Resend
+		RESEND_API_KEY: string;
+
+		// Amazon SES
+		AWS_ACCESS_KEY_ID: string;
+		AWS_SECRET_ACCESS_KEY: string;
+		AWS_REGION: string;
+
+		// SMTP HTTP relay (MailChannels, Brevo, Mailgun, etc.)
+		SMTP_API_URL: string;
+		SMTP_API_KEY: string;
 	}
 }
 interface Env extends Cloudflare.Env {}

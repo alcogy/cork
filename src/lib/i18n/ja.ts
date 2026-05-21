@@ -116,7 +116,13 @@ export const ja = {
 		addNote: '付箋を追加',
 		addContact: '担当者を追加',
 		exportCsv: 'CSV出力',
-		importCsv: 'CSVインポート'
+		importCsv: 'CSVインポート',
+		sendMessage: 'メッセージ',
+		messageDialog: 'メッセージを送信',
+		messageSubject: '件名',
+		messageBody: '本文',
+		messageSent: 'メッセージを送信しました',
+		messageNoEmail: 'この顧客にはメールアドレスが設定されていません'
 	},
 	project: {
 		title: 'プロジェクト',
@@ -332,7 +338,13 @@ export const ja = {
 		recordsPerPageDesc: '一覧画面の1ページあたりの表示件数',
 		addStatus: 'ステータスを追加',
 		addCategory: 'カテゴリを追加',
-		adminOnly: '管理者のみ閲覧できます'
+		adminOnly: '管理者のみ閲覧できます',
+		emailNotifications: 'メール通知',
+		alertEmail: 'アラートメールアドレス',
+		alertEmailDesc: '管理者アラートメール（ログイン失敗・セキュリティイベント）の宛先。Cloudflare Email Routing で検証済みのアドレスを設定してください。',
+		sendTestEmail: 'テストメール送信',
+		testEmailSent: 'テストメールを {email} に送信しました',
+		noEmailBinding: 'Cloudflare Email バインディング (SEND_EMAIL) が設定されていません'
 	},
 	fileUpload: {
 		title: 'ファイルをアップロード',

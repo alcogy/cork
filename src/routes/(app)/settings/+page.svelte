@@ -1,15 +1,16 @@
 <script lang="ts">
-	import { Button, Input, Label } from '$lib/ui';
-	import { Plus, Trash2, Globe, Sun, Moon, Monitor, Palette } from '@lucide/svelte';
+	import { Button, Input } from '$lib/ui';
+	import { Plus, Trash2, Globe, Sun, Moon, Monitor, Palette, Mail, Send, CircleCheck, CircleAlert } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { t, getLocale, setLocale, LOCALES, type Locale } from '$lib/i18n';
-	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
-	import type { PageData } from './$types';
+	import { t, getLocale, setLocale, LOCALES } from '$lib/i18n';
+	import { getTheme, setTheme } from '$lib/theme.svelte';
+	import type { PageData, ActionData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let saving = $state(false);
+	let testSending = $state(false);
 
 	function enh() {
 		return () => {
@@ -22,10 +23,16 @@
 		};
 	}
 
-	function handleLocaleChange(e: Event) {
-		const val = (e.currentTarget as HTMLSelectElement).value as Locale;
-		setLocale(val);
+	function enhTest() {
+		return () => {
+			testSending = true;
+			return async ({ update }: { update: () => Promise<void> }) => {
+				await update();
+				testSending = false;
+			};
+		};
 	}
+
 </script>
 
 <svelte:head>
@@ -95,6 +102,64 @@
 							</button>
 						{/each}
 					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Email Notifications -->
+	<section class="settings-section">
+		<h2><Mail size={16} /> {t().settings.emailNotifications}</h2>
+		<div class="settings-card">
+			<form method="POST" action="?/saveSetting" use:enhance={enh()} class="setting-row">
+				<input type="hidden" name="key" value="alert_email_to" />
+				<div class="setting-info">
+					<div class="setting-label">{t().settings.alertEmail}</div>
+					<div class="setting-desc">{t().settings.alertEmailDesc}</div>
+				</div>
+				<div class="setting-control">
+					<Input
+						name="value"
+						type="email"
+						value={data.settingsMap['alert_email_to'] ?? data.settingsMap['ALERT_EMAIL_TO'] ?? ''}
+						placeholder="email@example.com"
+						style="width: 220px"
+					/>
+					<Button type="submit" variant="secondary" size="sm" disabled={saving}>{t().common.save}</Button>
+				</div>
+			</form>
+
+			<div class="setting-row setting-row--border">
+				<div class="setting-info">
+					<div class="setting-label">{t().settings.sendTestEmail}</div>
+					<div class="setting-desc">
+						{#if !data.hasEmailBinding}
+							<span class="badge badge--warn">{t().settings.noEmailBinding}</span>
+						{:else if form?.testEmailSent}
+							<span class="badge badge--ok">
+								<CircleCheck size={12} />
+								{t().settings.testEmailSent.replace('{email}', form.sentTo ?? '')}
+							</span>
+						{:else if form?.error && !form?.testEmailSent === undefined}
+							<span class="badge badge--err"><CircleAlert size={12} /> {form.error}</span>
+						{/if}
+					</div>
+				</div>
+				<div class="setting-control">
+					<form method="POST" action="?/sendTestEmail" use:enhance={enhTest()}>
+						<Button
+							type="submit"
+							variant="secondary"
+							size="sm"
+							disabled={testSending || !data.hasEmailBinding}
+						>
+							<Send size={13} />
+							{testSending ? t().common.loading : t().settings.sendTestEmail}
+						</Button>
+					</form>
+					{#if form?.error && form?.testEmailSent === undefined}
+						<span class="badge badge--err"><CircleAlert size={12} /> {form.error}</span>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -331,5 +396,23 @@
 
 		&:hover { background-color: var(--color-danger-light); color: var(--color-danger); }
 		&:disabled { opacity: 0.5; cursor: not-allowed; }
+	}
+
+	.setting-row--border {
+		border-top: 1px solid var(--color-border-light);
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		border-radius: var(--radius-sm);
+		font-size: 0.75rem;
+		font-weight: 500;
+
+		&--ok  { background: #dcfce7; color: #166534; }
+		&--warn { background: #fef9c3; color: #854d0e; }
+		&--err  { background: #fee2e2; color: #991b1b; }
 	}
 </style>

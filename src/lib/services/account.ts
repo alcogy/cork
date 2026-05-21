@@ -4,6 +4,7 @@ import { asc, eq } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { hashPassword, validatePasswordStrength, deleteAllSessions } from '$lib/server/auth/index';
 import { writeAuditLog } from '$lib/server/audit';
+import { sendWelcomeEmail, sendPasswordChangedEmail } from './email';
 import type { ServiceCtx } from './index';
 
 const RoleSchema = z.enum(['admin', 'general']);
@@ -61,6 +62,11 @@ export async function createAccount(ctx: ServiceCtx, data: unknown) {
 			resource_id: account.id,
 			request
 		});
+
+		// Welcome email — fire-and-forget; never let email failure block account creation
+		const origin = request ? new URL(request.url).origin : '';
+		sendWelcomeEmail(ctx, account.id, `${origin}/login`).catch(() => {});
+
 		return { success: true };
 	} catch {
 		return fail(409, { error: 'Email address already in use' });
@@ -81,6 +87,8 @@ export async function updateAccount(ctx: ServiceCtx, id: string, data: unknown) 
 		updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19)
 	};
 
+	const passwordChanged = Boolean(r.data.password);
+
 	if (r.data.password) {
 		const strengthError = validatePasswordStrength(r.data.password);
 		if (strengthError) return fail(400, { error: strengthError });
@@ -98,6 +106,11 @@ export async function updateAccount(ctx: ServiceCtx, id: string, data: unknown) 
 		resource_id: id,
 		request
 	});
+
+	if (passwordChanged) {
+		sendPasswordChangedEmail(ctx, id).catch(() => {});
+	}
+
 	return { success: true };
 }
 

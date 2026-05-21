@@ -1,8 +1,12 @@
 import { error, fail } from '@sveltejs/kit';
+import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
+import { CloudflareEmailProvider } from '$lib/server/email/cloudflare';
+import { createEmailProvider } from '$lib/server/email/index';
+import { adminAlertEmail } from '$lib/server/email/templates';
 
 export const load: PageServerLoad = async ({ platform, locals }) => {
 	if (locals.user?.role !== 'admin') throw error(403, 'Forbidden');
@@ -17,8 +21,9 @@ export const load: PageServerLoad = async ({ platform, locals }) => {
 	]);
 
 	const settingsMap = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+	const hasEmailBinding = Boolean(platform!.env.SEND_EMAIL);
 
-	return { settingsMap, projectStatuses, projectCategories, workflowCategories };
+	return { settingsMap, projectStatuses, projectCategories, workflowCategories, hasEmailBinding };
 };
 
 export const actions = {
@@ -103,5 +108,47 @@ export const actions = {
 		const db = drizzle(platform!.env.DB, { schema });
 		await db.delete(schema.workflow_categories).where(eq(schema.workflow_categories.id, id));
 		return { success: true };
+	},
+
+	sendTestEmail: async ({ platform, locals }) => {
+		if (locals.user?.role !== 'admin') return fail(403, { error: 'Forbidden' });
+
+		if (!platform!.env.SEND_EMAIL) {
+			return fail(503, { error: 'Cloudflare Email binding (SEND_EMAIL) is not configured' });
+		}
+
+		const db = drizzle(platform!.env.DB, { schema });
+		const [row] = await db
+			.select({ value: schema.settings.value })
+			.from(schema.settings)
+			.where(eq(schema.settings.key, 'alert_email_to'))
+			.limit(1);
+
+		const alertTo = row?.value || platform!.env.ALERT_EMAIL_TO;
+		if (!alertTo) return fail(400, { error: 'No alert email address configured' });
+
+		const emailResult = z.email().safeParse(alertTo);
+		if (!emailResult.success) return fail(400, { error: 'Invalid email address' });
+
+		const from = platform!.env.EMAIL_FROM;
+		if (!from) return fail(400, { error: 'EMAIL_FROM is not configured' });
+		const provider = new CloudflareEmailProvider(platform!.env.SEND_EMAIL, from, alertTo);
+
+		try {
+			const { subject, html, text } = adminAlertEmail({
+				subject: 'Cork — Test Alert Email',
+				severity: 'info',
+				summary: 'This is a test email from Cork. If you received this, your email notification settings are configured correctly.',
+				details: {
+					'Sent by': locals.user!.name,
+					'Recipient': alertTo,
+					'Sent at': new Date().toUTCString()
+				}
+			});
+			await provider.send({ to: alertTo, subject, html, text });
+			return { success: true, testEmailSent: true, sentTo: alertTo };
+		} catch (e) {
+			return fail(500, { error: e instanceof Error ? e.message : 'Failed to send test email' });
+		}
 	}
 } satisfies Actions;
