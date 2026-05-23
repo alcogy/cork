@@ -109,7 +109,7 @@
 				<div class="section draft-edit-section">
 					<form method="POST" action="?/update" use:enhance={enh()} class="draft-edit-form">
 						<div class="draft-field">
-							<label class="draft-label" for="wf-title">{t().workflow.requestTitle} *</label>
+							<label class="draft-label" for="wf-title">{t().workflow.requestTitle} <span class="required-mark">*</span></label>
 							<Input id="wf-title" name="title" bind:value={editTitle} required />
 						</div>
 						<div class="draft-field">
@@ -442,6 +442,7 @@
 	.draft-edit-form { display: flex; flex-direction: column; gap: var(--space-lg); }
 	.draft-field { display: flex; flex-direction: column; gap: var(--space-xs); }
 	.draft-label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
+	.required-mark { color: var(--color-error); }
 	.draft-select {
 		height: 36px;
 		padding: 0 var(--space-md);

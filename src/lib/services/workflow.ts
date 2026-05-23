@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, max, ne } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
+import { sendWorkflowSubmittedEmails, sendWorkflowApprovedEmail, sendWorkflowRejectedEmail } from './email';
 import type { WORKFLOW_STATUSES } from '$lib/types/workflow';
 import type { ServiceCtx } from './index';
 
@@ -262,6 +263,11 @@ export async function submitWorkflow(
 	}
 
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+	// Re-fetch title in case it was updated above
+	const updatedWf = await db.query.workflows.findFirst({ where: eq(schema.workflows.id, workflowId) });
+	const workflowTitle = updatedWf?.title ?? wf.title;
+
 	await db
 		.update(schema.workflows)
 		.set({ status: 'submitted', submitted_at: now, updated_at: now })
@@ -273,6 +279,11 @@ export async function submitWorkflow(
 		resource_type: 'workflow',
 		resource_id: workflowId
 	});
+
+	// Fire-and-forget: notify all approvers
+	const approverIds = wf.approvals.map((a) => a.approver_id);
+	sendWorkflowSubmittedEmails(ctx, workflowId, workflowTitle, approverIds, user.name).catch(() => {});
+
 	return { success: true };
 }
 
@@ -310,6 +321,18 @@ export async function approveWorkflow(
 			.update(schema.workflows)
 			.set({ status: 'approved', completed_at: now, updated_at: now, current_approver_id: null })
 			.where(eq(schema.workflows.id, workflowId));
+
+		// Fire-and-forget: notify requester of full approval
+		db.select({ title: schema.workflows.title, requester_id: schema.workflows.requester_id })
+			.from(schema.workflows)
+			.where(eq(schema.workflows.id, workflowId))
+			.limit(1)
+			.then(([wf]) => {
+				if (wf) {
+					sendWorkflowApprovedEmail(ctx, workflowId, wf.title, wf.requester_id).catch(() => {});
+				}
+			})
+			.catch(() => {});
 	} else {
 		await db
 			.update(schema.workflows)
@@ -363,6 +386,18 @@ export async function rejectWorkflow(
 		.update(schema.workflows)
 		.set({ status: 'rejected', completed_at: now, updated_at: now, current_approver_id: null })
 		.where(eq(schema.workflows.id, workflowId));
+
+	// Fire-and-forget: notify requester of rejection
+	db.select({ title: schema.workflows.title, requester_id: schema.workflows.requester_id })
+		.from(schema.workflows)
+		.where(eq(schema.workflows.id, workflowId))
+		.limit(1)
+		.then(([wf]) => {
+			if (wf) {
+				sendWorkflowRejectedEmail(ctx, workflowId, wf.title, wf.requester_id).catch(() => {});
+			}
+		})
+		.catch(() => {});
 
 	if (comment) {
 		await db.insert(schema.workflow_comments).values({

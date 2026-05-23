@@ -93,6 +93,67 @@ export function customerMessageEmail(data: CustomerMessageEmailData): { subject:
 	return { subject: data.subject, html, text };
 }
 
+export interface WorkflowSubmittedEmailData {
+	approverName: string;
+	requesterName: string;
+	title: string;
+	url: string;
+}
+
+export function workflowSubmittedEmail(data: WorkflowSubmittedEmailData): { subject: string; html: string; text: string } {
+	const subject = `Approval Request: ${data.title}`;
+	const html = base(
+		subject,
+		`<h2>New approval request</h2>
+<p>Hi ${escape(data.approverName)},</p>
+<p>${escape(data.requesterName)} has submitted an approval request that requires your review.</p>
+<p><strong>Title:</strong> ${escape(data.title)}</p>
+<p><a class="btn" href="${escape(data.url)}">Review Request</a></p>`
+	);
+	const text = `Hi ${data.approverName},\n\n${data.requesterName} has submitted an approval request.\n\nTitle: ${data.title}\nReview: ${data.url}\n`;
+	return { subject, html, text };
+}
+
+export interface WorkflowApprovedEmailData {
+	requesterName: string;
+	title: string;
+	url: string;
+}
+
+export function workflowApprovedEmail(data: WorkflowApprovedEmailData): { subject: string; html: string; text: string } {
+	const subject = `Approved: ${data.title}`;
+	const html = base(
+		subject,
+		`<h2>Your request has been approved</h2>
+<p>Hi ${escape(data.requesterName)},</p>
+<p>Your approval request has been fully approved.</p>
+<p><strong>Title:</strong> ${escape(data.title)}</p>
+<p><a class="btn" href="${escape(data.url)}">View Request</a></p>`
+	);
+	const text = `Hi ${data.requesterName},\n\nYour approval request has been approved.\n\nTitle: ${data.title}\nView: ${data.url}\n`;
+	return { subject, html, text };
+}
+
+export interface WorkflowRejectedEmailData {
+	requesterName: string;
+	title: string;
+	url: string;
+}
+
+export function workflowRejectedEmail(data: WorkflowRejectedEmailData): { subject: string; html: string; text: string } {
+	const subject = `Rejected: ${data.title}`;
+	const html = base(
+		subject,
+		`<h2>Your request has been rejected</h2>
+<p>Hi ${escape(data.requesterName)},</p>
+<p>Your approval request has been rejected.</p>
+<p><strong>Title:</strong> ${escape(data.title)}</p>
+<p><a class="btn" href="${escape(data.url)}">View Request</a></p>`
+	);
+	const text = `Hi ${data.requesterName},\n\nYour approval request has been rejected.\n\nTitle: ${data.title}\nView: ${data.url}\n`;
+	return { subject, html, text };
+}
+
 export type AlertSeverity = 'info' | 'warning' | 'danger';
 
 export interface AdminAlertEmailData {

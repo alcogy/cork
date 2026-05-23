@@ -8,6 +8,9 @@ import {
 	passwordChangedEmail,
 	customerMessageEmail,
 	adminAlertEmail,
+	workflowSubmittedEmail,
+	workflowApprovedEmail,
+	workflowRejectedEmail,
 	type AdminAlertEmailData
 } from '$lib/server/email/templates';
 import { writeAuditLog } from '$lib/server/audit';
@@ -153,6 +156,95 @@ export async function sendCustomerMessage(
 	});
 
 	return {};
+}
+
+/**
+ * Notify all approvers when a workflow is submitted.
+ * Fire-and-forget — never throws.
+ */
+export async function sendWorkflowSubmittedEmails(
+	ctx: ServiceCtx,
+	workflowId: string,
+	workflowTitle: string,
+	approverIds: string[],
+	requesterName: string
+): Promise<void> {
+	const origin = ctx.request ? new URL(ctx.request.url).origin : '';
+	const url = `${origin}/workflows/${workflowId}`;
+	const provider = createEmailProvider(ctx.env);
+
+	for (const approverId of approverIds) {
+		try {
+			const approver = await resolveAccountEmail(ctx, approverId);
+			const emailResult = EmailSchema.safeParse(approver.email);
+			if (!emailResult.success) continue;
+			if (!checkRateLimit(`wf_submitted:${workflowId}:${approverId}`)) continue;
+
+			const { subject, html, text } = workflowSubmittedEmail({
+				approverName: approver.name,
+				requesterName,
+				title: workflowTitle,
+				url
+			});
+			await provider.send({ to: approver.email, subject, html, text });
+		} catch {
+			// Continue sending to remaining approvers if one fails
+		}
+	}
+}
+
+/**
+ * Notify the requester when their workflow is fully approved.
+ * Fire-and-forget — never throws.
+ */
+export async function sendWorkflowApprovedEmail(
+	ctx: ServiceCtx,
+	workflowId: string,
+	workflowTitle: string,
+	requesterId: string
+): Promise<void> {
+	const origin = ctx.request ? new URL(ctx.request.url).origin : '';
+	const url = `${origin}/workflows/${workflowId}`;
+
+	const requester = await resolveAccountEmail(ctx, requesterId);
+	const emailResult = EmailSchema.safeParse(requester.email);
+	if (!emailResult.success) return;
+	if (!checkRateLimit(`wf_approved:${workflowId}`)) return;
+
+	const provider = createEmailProvider(ctx.env);
+	const { subject, html, text } = workflowApprovedEmail({
+		requesterName: requester.name,
+		title: workflowTitle,
+		url
+	});
+	await provider.send({ to: requester.email, subject, html, text });
+}
+
+/**
+ * Notify the requester when their workflow is rejected.
+ * Fire-and-forget — never throws.
+ */
+export async function sendWorkflowRejectedEmail(
+	ctx: ServiceCtx,
+	workflowId: string,
+	workflowTitle: string,
+	requesterId: string
+): Promise<void> {
+	const origin = ctx.request ? new URL(ctx.request.url).origin : '';
+	const url = `${origin}/workflows/${workflowId}`;
+
+	const requester = await resolveAccountEmail(ctx, requesterId);
+	const emailResult = EmailSchema.safeParse(requester.email);
+	if (!emailResult.success) return;
+	if (!checkRateLimit(`wf_rejected:${workflowId}`)) return;
+
+	const provider = createEmailProvider(ctx.env);
+	const { subject, html, text } = workflowRejectedEmail({
+		requesterName: requester.name,
+		title: workflowTitle,
+		url
+	});
+	await provider.send({ to: requester.email, subject, html, text });
 }
 
 /**
