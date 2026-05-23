@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button, SearchBar, Pagination, Modal, Input, Label, Textarea } from '$lib/ui';
 	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/types/project';
-	import { Plus, Trash2 } from '@lucide/svelte';
+	import { Plus } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { formatDate } from '$lib/utils';
@@ -77,23 +77,6 @@
 						<span class="priority" style="color: {priorityColor[project.priority]}">
 							{PROJECT_PRIORITY_LABELS[project.priority]}
 						</span>
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<form
-							method="POST"
-							action="?/delete"
-							use:enhance={() => {
-								return async ({ update }) => {
-									await update();
-									await invalidateAll();
-								};
-							}}
-							onclick={(e) => e.stopPropagation()}
-						>
-							<input type="hidden" name="id" value={project.id} />
-							<button type="submit" class="delete-btn" aria-label="Delete project">
-								<Trash2 size={14} />
-							</button>
-						</form>
 					</div>
 				</a>
 			{/each}

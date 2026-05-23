@@ -330,22 +330,11 @@
 	const memberOptions = $derived(accounts.filter((a) => members.includes(a.id)));
 
 	// ── Validation ─────────────────────────────────────────────────────────────
-	interface FormErrors {
-		title?: string;
-		startDate?: string;
-		endDate?: string;
-	}
-	let errors = $state<FormErrors>({});
+	let errors = $state<Record<string, never>>({});
 
 	function validate(): boolean {
-		const next: FormErrors = {};
-		if (!title.trim()) next.title = 'タイトルは必須です';
-		if (!startDate) next.startDate = '開始日は必須です';
-		if (!endDate) next.endDate = '終了日は必須です';
-		if (startDate && endDate && endDate < startDate)
-			next.endDate = '終了日は開始日以降を指定してください';
-		errors = next;
-		return Object.keys(next).length === 0;
+		errors = {};
+		return true;
 	}
 
 	// ── Save with loading state ─────────────────────────────────────────────
@@ -368,57 +357,6 @@
 		}
 	}
 </script>
-
-<!-- ── Basic info ──────────────────────────────────────────────────────────── -->
-<div class="form-card">
-	<h2 class="card-title">基本情報</h2>
-	<div class="form-grid">
-		<div class="field full">
-			<label class="label" for="wbs-title">案件タイトル <span class="req">*</span></label>
-			<input
-				id="wbs-title"
-				class="inp"
-				class:inp-error={!!errors.title}
-				type="text"
-				bind:value={title}
-				placeholder="プロジェクト名を入力"
-			/>
-			{#if errors.title}<p class="field-error">{errors.title}</p>{/if}
-		</div>
-		<div class="field full">
-			<label class="label" for="wbs-desc">案件概要</label>
-			<textarea
-				id="wbs-desc"
-				class="inp textarea"
-				bind:value={description}
-				rows="3"
-				placeholder="プロジェクトの概要・目的を入力"
-			></textarea>
-		</div>
-		<div class="field">
-			<label class="label" for="wbs-start">開始日 <span class="req">*</span></label>
-			<input
-				id="wbs-start"
-				class="inp"
-				class:inp-error={!!errors.startDate}
-				type="date"
-				bind:value={startDate}
-			/>
-			{#if errors.startDate}<p class="field-error">{errors.startDate}</p>{/if}
-		</div>
-		<div class="field">
-			<label class="label" for="wbs-end">終了日 <span class="req">*</span></label>
-			<input
-				id="wbs-end"
-				class="inp"
-				class:inp-error={!!errors.endDate}
-				type="date"
-				bind:value={endDate}
-			/>
-			{#if errors.endDate}<p class="field-error">{errors.endDate}</p>{/if}
-		</div>
-	</div>
-</div>
 
 <!-- ── Members ─────────────────────────────────────────────────────────────── -->
 <div class="form-card">

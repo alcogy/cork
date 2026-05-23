@@ -15,10 +15,14 @@
 	type Tab = 'overview' | 'kanban' | 'wbs' | 'members' | 'activity' | 'files';
 	let activeTab = $state<Tab>('overview');
 	let showEdit = $state(false);
+	let showDeleteProject = $state(false);
+	let deleteFormEl = $state<HTMLFormElement | null>(null);
 	let showAddTask = $state(false);
 	let showCreateWbs = $state(false);
 	let showUploadDialog = $state(false);
 	let saving = $state(false);
+	let dragTaskId = $state<string | null>(null);
+	let dragOverCol = $state<string | null>(null);
 
 	function enh(opts: { close?: () => void } = {}) {
 		return () => {
@@ -54,6 +58,14 @@
 		high: 'var(--color-warning)',
 		urgent: 'var(--color-danger)'
 	};
+
+	async function moveTask(taskId: string, newStatus: string) {
+		const fd = new FormData();
+		fd.set('id', taskId);
+		fd.set('status', newStatus);
+		await fetch('?/updateTaskStatus', { method: 'POST', body: fd, headers: { accept: 'application/json' } });
+		await invalidateAll();
+	}
 </script>
 
 <svelte:head>
@@ -79,9 +91,12 @@
 				</span>
 			</div>
 		</div>
-		{#if data.isOwner}
-			<Button variant="secondary" size="sm" onclick={() => (showEdit = true)}>Edit</Button>
-		{/if}
+		<div class="header-actions">
+			{#if data.isOwner}
+				<Button variant="secondary" size="sm" onclick={() => (showEdit = true)}>{t().common.edit}</Button>
+				<Button variant="danger" size="sm" onclick={() => (showDeleteProject = true)}>{t().common.delete}</Button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Tabs -->
@@ -173,9 +188,28 @@
 								<span>{col.label}</span>
 								<span class="col-count">{tasksByStatus()[col.key].length}</span>
 							</div>
-							<div class="kanban-tasks">
+							<div
+								role="list"
+								class="kanban-tasks {dragOverCol === col.key ? 'drag-over' : ''}"
+								ondragover={(e) => { e.preventDefault(); dragOverCol = col.key; }}
+								ondragleave={() => { dragOverCol = null; }}
+								ondrop={(e) => {
+									e.preventDefault();
+									dragOverCol = null;
+									if (dragTaskId && dragTaskId !== col.key) {
+										moveTask(dragTaskId, col.key);
+										dragTaskId = null;
+									}
+								}}
+							>
 								{#each tasksByStatus()[col.key] as task (task.id)}
-									<div class="kanban-card">
+									<div
+										role="listitem"
+										class="kanban-card"
+										draggable="true"
+										ondragstart={(e) => { dragTaskId = task.id; e.dataTransfer!.effectAllowed = 'move'; }}
+										ondragend={() => { dragTaskId = null; }}
+									>
 										<div class="kanban-card-name">{task.name}</div>
 										{#if task.assignee}
 											<div class="kanban-card-assignee">{task.assignee.name}</div>
@@ -184,20 +218,6 @@
 											<div class="kanban-card-date">{formatDate(task.planned_end)}</div>
 										{/if}
 										<div class="kanban-card-actions">
-											{#if col.key !== 'todo'}
-												<form method="POST" action="?/updateTaskStatus" use:enhance={enh()}>
-													<input type="hidden" name="id" value={task.id} />
-													<input type="hidden" name="status" value={col.key === 'in_progress' ? 'todo' : 'in_progress'} />
-													<button type="submit" class="move-btn" title="Move left">←</button>
-												</form>
-											{/if}
-											{#if col.key !== 'done'}
-												<form method="POST" action="?/updateTaskStatus" use:enhance={enh()}>
-													<input type="hidden" name="id" value={task.id} />
-													<input type="hidden" name="status" value={col.key === 'todo' ? 'in_progress' : 'done'} />
-													<button type="submit" class="move-btn" title="Move right">→</button>
-												</form>
-											{/if}
 											<form method="POST" action="?/deleteTask" use:enhance={enh()}>
 												<input type="hidden" name="id" value={task.id} />
 												<button type="submit" class="del-btn" aria-label="Delete task"><Trash2 size={12} /></button>
@@ -247,9 +267,10 @@
 						const fd = new FormData();
 						fd.set('wbs_id', data.wbs!.id);
 						fd.set('tasks', JSON.stringify(formData.tasks));
-						await fetch('?/saveWbs', { method: 'POST', body: fd });
+						await fetch('?/saveWbs', { method: 'POST', body: fd, headers: { accept: 'application/json' } });
 						await invalidateAll();
 					}}
+					onCancel={() => (activeTab = 'overview')}
 				/>
 			{:else}
 				<div class="wbs-empty">
@@ -267,21 +288,19 @@
 		<div class="tab-content">
 			<div class="members-header">
 				<h3>{t().project.projectMembers}</h3>
-				{#if data.availableAccounts.length > 0}
-					<form method="POST" action="?/addMember" use:enhance={enh()}>
-						<div class="add-member-row">
-							<select name="account_id" class="select-input" required aria-label="Select member to add">
-								<option value="">{t().project.selectMember}</option>
-								{#each data.availableAccounts as account (account.id)}
-									<option value={account.id}>{account.name}</option>
-								{/each}
-							</select>
-							<Button type="submit" variant="primary" size="sm">
-								<UserPlus size={14} /> Add
-							</Button>
-						</div>
-					</form>
-				{/if}
+				<form method="POST" action="?/addMember" use:enhance={enh()}>
+					<div class="add-member-row">
+						<select name="account_id" class="select-input" disabled={data.availableAccounts.length === 0} aria-label="Select member to add">
+							<option value="">{data.availableAccounts.length === 0 ? t().project.noMembers : t().project.selectMember}</option>
+							{#each data.availableAccounts as account (account.id)}
+								<option value={account.id}>{account.name}</option>
+							{/each}
+						</select>
+						<Button type="submit" variant="primary" size="sm" disabled={data.availableAccounts.length === 0}>
+							<UserPlus size={14} /> {t().common.add}
+						</Button>
+					</div>
+				</form>
 			</div>
 			<div class="member-list">
 				{#each data.project.members as member (member.id)}
@@ -482,6 +501,23 @@
 	onuploaded={() => invalidateAll()}
 />
 
+<form
+	bind:this={deleteFormEl}
+	method="POST"
+	action="?/delete"
+	use:enhance={() => { saving = true; }}
+	style="display: none"
+></form>
+
+<ConfirmDialog
+	bind:open={showDeleteProject}
+	title={t().project.delete}
+	message={t().project.deleteConfirm}
+	confirmLabel={t().common.delete}
+	onconfirm={() => deleteFormEl?.requestSubmit()}
+	oncancel={() => (showDeleteProject = false)}
+/>
+
 <style lang="scss">
 	.page { display: flex; flex-direction: column; gap: var(--space-xl); }
 
@@ -523,6 +559,13 @@
 	.priority-badge {
 		font-size: 0.75rem;
 		font-weight: 500;
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		flex-shrink: 0;
 	}
 
 	.tabs {
@@ -623,6 +666,12 @@
 		flex-direction: column;
 		gap: var(--space-sm);
 		min-height: 100px;
+		transition: background-color var(--transition-fast);
+
+		&.drag-over {
+			background-color: var(--color-primary-light, #e0e7ff);
+			border-radius: var(--radius-md);
+		}
 	}
 
 	.kanban-card {
@@ -642,22 +691,6 @@
 		align-items: center;
 		gap: var(--space-xs);
 		margin-top: var(--space-xs);
-	}
-
-	.move-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border: 1px solid var(--color-border);
-		background: var(--color-bg-sunken);
-		border-radius: var(--radius-sm);
-		cursor: pointer;
-		font-size: 0.75rem;
-		color: var(--color-text-secondary);
-
-		&:hover { background: var(--color-primary-light); color: var(--color-primary); }
 	}
 
 	.del-btn {

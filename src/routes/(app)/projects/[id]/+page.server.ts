@@ -1,8 +1,10 @@
+import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { makeCtx } from '$lib/services';
 import {
 	getProject,
 	updateProject,
+	deleteProject,
 	addMember,
 	removeMember,
 	logActivity,
@@ -20,6 +22,11 @@ export const load: PageServerLoad = async ({ platform, params, locals }) => {
 };
 
 export const actions = {
+	delete: async ({ platform, params, locals }) => {
+		await deleteProject(makeCtx(platform!, locals), params.id);
+		throw redirect(303, '/projects');
+	},
+
 	update: async ({ request, platform, params, locals }) => {
 		const f = await request.formData();
 		return updateProject(makeCtx(platform!, locals, request), params.id, {

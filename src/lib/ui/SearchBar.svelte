@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Input from './Input.svelte';
 	import Button from './Button.svelte';
 	import { Search } from '@lucide/svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		value: string;
@@ -19,8 +19,8 @@
 
 <form class="search-bar" onsubmit={handleSubmit}>
 	<Search size={16} />
-	<input class="input" placeholder={placeholder} bind:value  />
-	<Button type="submit" variant="secondary" size="sm">Search</Button>
+	<input class="input" placeholder={placeholder} bind:value />
+	<Button type="submit" variant="secondary" size="sm">{t().common.search}</Button>
 </form>
 
 <style lang="scss">
