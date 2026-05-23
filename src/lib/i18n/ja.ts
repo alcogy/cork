@@ -64,6 +64,7 @@ export const ja = {
 		progress: '進捗管理',
 		apps: 'アプリ',
 		accounts: 'アカウント管理',
+		auditLog: '操作ログ',
 		profile: 'プロフィール',
 		settings: '設定',
 		signOut: 'サインアウト'
@@ -392,6 +393,43 @@ export const ja = {
 		uploading: 'アップロード中...',
 		upload: 'アップロード',
 		errorSize: 'ファイルサイズは{size}MB以下にしてください'
+	},
+	auditLog: {
+		title: '操作ログ',
+		dateTime: '日時',
+		user: 'ユーザー',
+		action: '操作',
+		resourceType: 'リソース',
+		resourceId: 'ID',
+		ipAddress: 'IPアドレス',
+		detail: '詳細',
+		searchUser: 'ユーザーで絞り込み...',
+		allActions: 'すべての操作',
+		allResources: 'すべてのリソース',
+		noLogs: '操作ログがありません。',
+		actions: {
+			create: '作成',
+			update: '更新',
+			delete: '削除',
+			login: 'ログイン',
+			login_failed: 'ログイン失敗',
+			logout: 'ログアウト',
+			export: 'エクスポート',
+			import: 'インポート'
+		},
+		resources: {
+			customer: '顧客',
+			project: 'プロジェクト',
+			workflow: '承認申請',
+			account: 'アカウント',
+			wbs: 'WBS',
+			file: 'ファイル',
+			email: 'メール',
+			app: 'アプリ',
+			record: 'レコード',
+			bookmark: 'ブックマーク',
+			session: 'セッション'
+		}
 	},
 	errors: {
 		required: 'この項目は必須です',

@@ -10,6 +10,7 @@
 		CheckSquare,
 		AppWindow,
 		Shield,
+		ScrollText,
 		CircleUser,
 		Settings,
 		LogOut
@@ -29,7 +30,8 @@
 		{ href: '/projects', label: t().nav.projects, icon: FolderKanban },
 		{ href: '/workflows', label: t().nav.workflows, icon: CheckSquare },
 		{ href: '/apps', label: t().nav.apps, icon: AppWindow },
-		{ href: '/accounts', label: t().nav.accounts, icon: Shield, adminOnly: true }
+		{ href: '/accounts', label: t().nav.accounts, icon: Shield, adminOnly: true },
+		{ href: '/audit-logs', label: t().nav.auditLog, icon: ScrollText, adminOnly: true }
 	]);
 
 	const secondaryNavItems = $derived<NavItem[]>([

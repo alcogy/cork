@@ -15,6 +15,8 @@ Open-source integrated business management platform built on Cloudflare's infras
 | **Approvals** | Multi-step approval workflows, approver setup, approve/reject with comments, file attachments (R2); submit saves draft edits in one request |
 | **No-code Apps** | Drag-and-drop field builder (10 field types), record list / detail / edit / delete, publish/draft toggle, bookmarks (pinned to sidebar) |
 | **Accounts** | User management (admin only), role assignment |
+| **Audit Log** | Admin-only operation log; action / resource / user filters; paginated |
+| **Email** | Workflow notifications (submit / approve / reject), welcome & password-change emails; supports Resend, AWS SES, SMTP |
 | **i18n** | English / Japanese, switchable at runtime |
 
 ## Stack

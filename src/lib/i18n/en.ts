@@ -64,6 +64,7 @@ export const en = {
 		progress: 'Progress',
 		apps: 'Apps',
 		accounts: 'Accounts',
+		auditLog: 'Audit Log',
 		profile: 'Profile',
 		settings: 'Settings',
 		signOut: 'Sign out'
@@ -414,6 +415,43 @@ export const en = {
 		uploading: 'Uploading...',
 		upload: 'Upload',
 		errorSize: 'File size must be {size} MB or less'
+	},
+	auditLog: {
+		title: 'Audit Log',
+		dateTime: 'Date / Time',
+		user: 'User',
+		action: 'Action',
+		resourceType: 'Resource',
+		resourceId: 'ID',
+		ipAddress: 'IP Address',
+		detail: 'Detail',
+		searchUser: 'Search by user...',
+		allActions: 'All actions',
+		allResources: 'All resources',
+		noLogs: 'No audit logs found.',
+		actions: {
+			create: 'Create',
+			update: 'Update',
+			delete: 'Delete',
+			login: 'Login',
+			login_failed: 'Login failed',
+			logout: 'Logout',
+			export: 'Export',
+			import: 'Import'
+		},
+		resources: {
+			customer: 'Customer',
+			project: 'Project',
+			workflow: 'Approval',
+			account: 'Account',
+			wbs: 'WBS',
+			file: 'File',
+			email: 'Email',
+			app: 'App',
+			record: 'Record',
+			bookmark: 'Bookmark',
+			session: 'Session'
+		}
 	},
 	errors: {
 		required: 'This field is required',
