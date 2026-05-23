@@ -42,8 +42,13 @@ export const actions = {
 		return addComment(makeCtx(platform!, locals), params.id, { content: f.get('content')?.toString().trim() ?? '' });
 	},
 
-	submit: async ({ platform, params, locals }) => {
-		return submitWorkflow(makeCtx(platform!, locals), params.id);
+	submit: async ({ request, platform, params, locals }) => {
+		const f = await request.formData();
+		return submitWorkflow(makeCtx(platform!, locals, request), params.id, {
+			title: f.get('title')?.toString().trim() || undefined,
+			description: f.get('description')?.toString().trim() || undefined,
+			priority: f.get('priority')?.toString() || undefined
+		});
 	},
 
 	approve: async ({ request, platform, params, locals }) => {

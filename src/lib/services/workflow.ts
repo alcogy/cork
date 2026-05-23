@@ -229,8 +229,12 @@ export async function addComment(ctx: ServiceCtx, workflowId: string, data: unkn
 	return { success: true };
 }
 
-export async function submitWorkflow(ctx: ServiceCtx, workflowId: string) {
-	const { db, env, user } = ctx;
+export async function submitWorkflow(
+	ctx: ServiceCtx,
+	workflowId: string,
+	updateData?: { title?: string; description?: string; priority?: string }
+) {
+	const { db, env, user, request } = ctx;
 	const wf = await db.query.workflows.findFirst({
 		where: eq(schema.workflows.id, workflowId),
 		with: { approvals: true }
@@ -238,6 +242,24 @@ export async function submitWorkflow(ctx: ServiceCtx, workflowId: string) {
 	if (!wf) return fail(404, { error: 'Not found' });
 	if (wf.approvals.length === 0)
 		return fail(400, { error: 'Add at least one approver before submitting' });
+
+	if (updateData?.title) {
+		const r = UpdateWorkflowSchema.safeParse(updateData);
+		if (!r.success) return fail(400, { error: r.error.issues[0].message });
+		const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+		await db
+			.update(schema.workflows)
+			.set({ title: r.data.title, description: r.data.description ?? null, priority: r.data.priority ?? 'normal', updated_at: now })
+			.where(eq(schema.workflows.id, workflowId));
+		await writeAuditLog({
+			db: env.DB,
+			account_id: user.id,
+			action: 'update',
+			resource_type: 'workflow',
+			resource_id: workflowId,
+			request
+		});
+	}
 
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 	await db

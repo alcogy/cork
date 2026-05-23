@@ -12,8 +12,8 @@ Open-source integrated business management platform built on Cloudflare's infras
 |---|---|
 | **CRM** | Customer list/detail, activities, schedules, sticky notes, contacts, CSV export/import |
 | **Projects** | Kanban board, WBS Gantt chart, file uploads (R2), members, activity log |
-| **Approvals** | Multi-step approval workflows, approver setup, approve/reject, comments, file attachments |
-| **No-code Apps** | Drag-and-drop field builder, record management, publish/draft toggle, bookmarks |
+| **Approvals** | Multi-step approval workflows, approver setup, approve/reject with comments, file attachments (R2); submit saves draft edits in one request |
+| **No-code Apps** | Drag-and-drop field builder (10 field types), record list / detail / edit / delete, publish/draft toggle, bookmarks (pinned to sidebar) |
 | **Accounts** | User management (admin only), role assignment |
 | **i18n** | English / Japanese, switchable at runtime |
 

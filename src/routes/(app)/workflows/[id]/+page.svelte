@@ -12,6 +12,15 @@
 
 	let saving = $state(false);
 	let showUploadDialog = $state(false);
+	let editTitle = $state(data.workflow.title);
+	let editPriority = $state(data.workflow.priority);
+	let editDescription = $state(data.workflow.description ?? '');
+
+	$effect(() => {
+		editTitle = data.workflow.title;
+		editPriority = data.workflow.priority;
+		editDescription = data.workflow.description ?? '';
+	});
 	let decisionComment = $state('');
 	let pendingAction = $state<'approve' | 'reject' | null>(null);
 	let approveFormEl = $state<HTMLFormElement | null>(null);
@@ -101,19 +110,19 @@
 					<form method="POST" action="?/update" use:enhance={enh()} class="draft-edit-form">
 						<div class="draft-field">
 							<label class="draft-label" for="wf-title">{t().workflow.requestTitle} *</label>
-							<Input id="wf-title" name="title" value={wf.title} required />
+							<Input id="wf-title" name="title" bind:value={editTitle} required />
 						</div>
 						<div class="draft-field">
 							<label class="draft-label" for="wf-priority">{t().workflow.priority}</label>
-							<select id="wf-priority" name="priority" class="draft-select">
+							<select id="wf-priority" name="priority" class="draft-select" bind:value={editPriority}>
 								{#each WORKFLOW_PRIORITIES as p (p)}
-									<option value={p} selected={wf.priority === p}>{t().workflow.priorities[p]}</option>
+									<option value={p}>{t().workflow.priorities[p]}</option>
 								{/each}
 							</select>
 						</div>
 						<div class="draft-field">
 							<label class="draft-label" for="wf-desc">{t().workflow.description}</label>
-							<Textarea id="wf-desc" name="description" rows={4} value={wf.description ?? ''} />
+							<Textarea id="wf-desc" name="description" rows={4} bind:value={editDescription} />
 						</div>
 						<div class="draft-save-row">
 							<Button type="submit" variant="secondary" size="sm" disabled={saving}>{t().common.save}</Button>
@@ -198,6 +207,9 @@
 			{#if wf.status === 'draft' && data.isRequester && wf.approvals.length > 0}
 				<div class="submit-section">
 					<form method="POST" action="?/submit" use:enhance={enh()}>
+						<input type="hidden" name="title" value={editTitle} />
+						<input type="hidden" name="priority" value={editPriority} />
+						<input type="hidden" name="description" value={editDescription} />
 						<Button type="submit" variant="primary" disabled={saving}>
 							{t().workflow.submit}
 						</Button>
