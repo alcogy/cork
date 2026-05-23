@@ -358,47 +358,6 @@
 	}
 </script>
 
-<!-- ── Members ─────────────────────────────────────────────────────────────── -->
-<div class="form-card">
-	<h2 class="card-title">メンバー</h2>
-	{#if accounts.length === 0}
-		<p class="no-accounts">登録済みアカウントがありません</p>
-	{:else}
-		<div class="account-list">
-			{#each accounts as account (account.id)}
-				<SelectChip
-					label={account.name}
-					name="wbs-member"
-					value={account.id}
-					checked={members.includes(account.id)}
-					onChange={(v: boolean) => {
-						if (v) {
-							members = [...members, account.id];
-						} else {
-							members = members.filter((id) => id !== account.id);
-						}
-					}}
-				/>
-				<!--<label class="account-item">
-					<input
-						type="checkbox"
-						class="account-check"
-						checked={members.includes(account.id)}
-						onchange={(e) => {
-							if ((e.currentTarget as HTMLInputElement).checked) {
-								members = [...members, account.id];
-							} else {
-								members = members.filter((id) => id !== account.id);
-							}
-						}}
-					/>
-					<span class="account-name">{account.name}</span>
-				</label>-->
-			{/each}
-		</div>
-	{/if}
-</div>
-
 <!-- ── Gantt ──────────────────────────────────────────────────────────────── -->
 <div class="form-card">
 	<div class="card-header">
@@ -699,40 +658,6 @@
 			resize: vertical;
 			line-height: 1.5;
 		}
-	}
-
-	/* ── Members ── */
-	.no-accounts {
-		font-size: 0.8125rem;
-		color: var(--color-text-tertiary);
-		margin: 0;
-	}
-
-	.account-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm) var(--space-md);
-	}
-
-	.account-item {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		cursor: pointer;
-		user-select: none;
-	}
-
-	.account-check {
-		width: 15px;
-		height: 15px;
-		flex-shrink: 0;
-		accent-color: var(--color-primary);
-		cursor: pointer;
-	}
-
-	.account-name {
-		font-size: 0.8125rem;
-		color: var(--color-text);
 	}
 
 	/* ── Buttons ── */
