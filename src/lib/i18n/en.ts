@@ -228,7 +228,21 @@ export const en = {
 		noWbs: 'No WBS created yet for this project.',
 		noWbsKanban: 'No WBS set up yet. Create a WBS to use Kanban.',
 		goToWbs: 'Go to WBS tab',
-		searchPlaceholder: 'Search projects...'
+		searchPlaceholder: 'Search projects...',
+		gantt: {
+			title: 'Gantt Chart',
+			hint: 'Drag on the chart to set task duration. Drag bars to move or resize.',
+			addTask: 'Add task',
+			zoomIn: 'Zoom in',
+			zoomOut: 'Zoom out',
+			taskName: 'Task name',
+			assignee: 'Assignee',
+			plannedPeriod: 'Planned period',
+			moveUp: 'Move up',
+			moveDown: 'Move down',
+			unassigned: 'Unassigned',
+			zoomLabels: ['All', 'Month', 'Week', 'Day'] as const
+		}
 	},
 	workflow: {
 		title: 'Approvals',

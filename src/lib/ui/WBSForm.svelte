@@ -3,6 +3,7 @@
 	import { Button } from './index.js';
 	import { Plus, Trash2, ChevronUp, ChevronDown, ZoomIn, ZoomOut } from '@lucide/svelte';
 	import { SelectChip } from '$lib/ui/index.js';
+	import { t } from '$lib/i18n';
 
 	// ── Types ──────────────────────────────────────────────────────────────────
 	export interface Account {
@@ -64,7 +65,6 @@
 	// ── Zoom ───────────────────────────────────────────────────────────────────
 	let zoom = $state(1);
 	const PX_PER_DAY = [4, 8, 16, 32] as const;
-	const ZOOM_LABELS = ['全体', '月', '週', '日'] as const;
 	const pxPerDay = $derived(PX_PER_DAY[zoom]);
 
 	// ── Chart geometry ─────────────────────────────────────────────────────────
@@ -361,7 +361,7 @@
 <!-- ── Gantt ──────────────────────────────────────────────────────────────── -->
 <div class="form-card">
 	<div class="card-header">
-		<h2 class="card-title">ガントチャート</h2>
+		<h2 class="card-title">{t().project.gantt.title}</h2>
 		<div class="gantt-controls">
 			<!-- Zoom -->
 			<div class="zoom-wrap">
@@ -369,26 +369,26 @@
 					class="zoom-btn"
 					disabled={zoom === 0}
 					onclick={() => zoom--}
-					aria-label="縮小"
+					aria-label={t().project.gantt.zoomOut}
 				>
 					<ZoomOut size={14} />
 				</button>
-				<span class="zoom-label">{ZOOM_LABELS[zoom]}</span>
+				<span class="zoom-label">{t().project.gantt.zoomLabels[zoom]}</span>
 				<button
 					class="zoom-btn"
 					disabled={zoom === 3}
 					onclick={() => zoom++}
-					aria-label="拡大"
+					aria-label={t().project.gantt.zoomIn}
 				>
 					<ZoomIn size={14} />
 				</button>
 			</div>
 			<button class="add-btn" onclick={addTask}>
-				<Plus size={14} />タスク追加
+				<Plus size={14} />{t().project.gantt.addTask}
 			</button>
 		</div>
 	</div>
-	<p class="gantt-hint">ガントチャート上をドラッグして予定期間を設定できます。バーをドラッグして移動・リサイズも可能です。</p>
+	<p class="gantt-hint">{t().project.gantt.hint}</p>
 
 	<div class="gantt-outer">
 	<div class="gantt-wrap">
@@ -396,9 +396,9 @@
 		<div class="gantt-left">
 			<div class="gl-row gl-hdr" style="height:{HDR_H}px">
 				<div class="col-no">#</div>
-				<div class="col-name">タスク名</div>
-				<div class="col-asgn">担当者</div>
-				<div class="col-dates">予定期間</div>
+				<div class="col-name">{t().project.gantt.taskName}</div>
+				<div class="col-asgn">{t().project.gantt.assignee}</div>
+				<div class="col-dates">{t().project.gantt.plannedPeriod}</div>
 				<div class="col-ops"></div>
 			</div>
 			<div class="gl-row gl-sub" style="height:{SUB_H}px"></div>
@@ -411,7 +411,7 @@
 								class="icon-btn-xs"
 								onclick={() => moveUp(i)}
 								disabled={i === 0}
-								aria-label="上へ"
+								aria-label={t().project.gantt.moveUp}
 							>
 								<ChevronUp size={11} />
 							</button>
@@ -419,7 +419,7 @@
 								class="icon-btn-xs"
 								onclick={() => moveDown(i)}
 								disabled={i === tasks.length - 1}
-								aria-label="下へ"
+								aria-label={t().project.gantt.moveDown}
 							>
 								<ChevronDown size={11} />
 							</button>
@@ -433,7 +433,7 @@
 							oninput={(e) => {
 								task.name = (e.currentTarget as HTMLInputElement).value;
 							}}
-							placeholder="タスク名"
+							placeholder={t().project.gantt.taskName}
 						/>
 					</div>
 					<div class="col-asgn">
@@ -444,7 +444,7 @@
 								task.assignee = (e.currentTarget as HTMLSelectElement).value;
 							}}
 						>
-							<option value="">未選択</option>
+							<option value="">{t().project.gantt.unassigned}</option>
 							{#each memberOptions as account (account.id)}
 								<option value={account.id}>{account.name}</option>
 							{/each}
@@ -467,7 +467,7 @@
 							class="icon-btn danger"
 							onclick={() => removeTask(task.id)}
 							disabled={tasks.length === 1}
-							aria-label="削除"
+							aria-label={t().common.delete}
 						>
 							<Trash2 size={14} />
 						</button>
@@ -553,9 +553,9 @@
 
 <!-- ── Actions ────────────────────────────────────────────────────────────── -->
 <div class="form-actions">
-	<Button variant="secondary" onclick={onCancel} disabled={saving}>キャンセル</Button>
+	<Button variant="secondary" onclick={onCancel} disabled={saving}>{t().common.cancel}</Button>
 	<Button variant="primary" onclick={handleSave} disabled={saving}>
-		{#if saving}保存中...{:else}保存{/if}
+		{#if saving}{t().common.saving}{:else}{t().common.save}{/if}
 	</Button>
 </div>
 

@@ -188,7 +188,21 @@ export const ja = {
 		noWbs: 'このプロジェクトのWBSはまだ作成されていません。',
 		noWbsKanban: 'WBSが未設定です。カンバンを使用するにはWBSを作成してください。',
 		goToWbs: 'WBSタブへ移動',
-		searchPlaceholder: 'プロジェクトを検索...'
+		searchPlaceholder: 'プロジェクトを検索...',
+		gantt: {
+			title: 'ガントチャート',
+			hint: 'ガントチャート上をドラッグして予定期間を設定できます。バーをドラッグして移動・リサイズも可能です。',
+			addTask: 'タスク追加',
+			zoomIn: '拡大',
+			zoomOut: '縮小',
+			taskName: 'タスク名',
+			assignee: '担当者',
+			plannedPeriod: '予定期間',
+			moveUp: '上へ',
+			moveDown: '下へ',
+			unassigned: '未選択',
+			zoomLabels: ['全体', '月', '週', '日'] as const
+		}
 	},
 	workflow: {
 		title: '承認申請',
