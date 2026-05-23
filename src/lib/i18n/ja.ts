@@ -217,7 +217,8 @@ export const ja = {
 			rejected: '否認',
 			cancelled: 'キャンセル'
 		},
-		priorities: { low: '低', normal: '通常', high: '高', urgent: '緊急' }
+		priorities: { low: '低', normal: '通常', high: '高', urgent: '緊急' },
+		approvalStatuses: { pending: '保留中', approved: '承認済み', rejected: '否認' }
 	},
 	progress: {
 		title: 'WBS',
@@ -276,6 +277,10 @@ export const ja = {
 		options: '選択肢',
 		addOption: '選択肢を追加',
 		selectField: 'フィールドを選択して設定を編集',
+		recordDetail: 'レコード詳細',
+		editRecord: 'レコードを編集',
+		deleteRecord: 'レコードを削除',
+		deleteRecordConfirm: 'このレコードを削除しますか？この操作は取り消せません。',
 		fieldTypes: {
 			text: '1行テキスト',
 			textarea: '複数行テキスト',

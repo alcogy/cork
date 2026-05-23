@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { ArrowLeft, Plus, Trash2, Wrench } from '@lucide/svelte';
+	import { ArrowLeft, Plus, Wrench } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
-	import { formatDateTime } from '$lib/utils';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { formatDateTimeJP } from '$lib/utils';
 	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
@@ -11,6 +11,8 @@
 
 	let showForm = $state(false);
 	let saving = $state(false);
+
+	const isAdmin = $derived(data.user?.role === 'admin');
 
 	function enh(onDone?: () => void) {
 		return () => {
@@ -47,14 +49,16 @@
 			<span class="status-badge {data.app.is_published ? 'published' : 'draft'}">
 				{data.app.is_published ? t().apps.published : t().apps.draft}
 			</span>
-			<form method="POST" action="?/togglePublish" use:enhance={enh()}>
-				<Button type="submit" variant="secondary" size="sm">
-					{data.app.is_published ? t().apps.unpublish : t().apps.publish}
-				</Button>
-			</form>
-			<a href="/apps/{data.app.id}/build" class="btn-link">
-				<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
-			</a>
+			{#if isAdmin}
+				<form method="POST" action="?/togglePublish" use:enhance={enh()}>
+					<Button type="submit" variant="secondary" size="sm">
+						{data.app.is_published ? t().apps.unpublish : t().apps.publish}
+					</Button>
+				</form>
+				<a href="/apps/{data.app.id}/build" class="btn-link">
+					<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
+				</a>
+			{/if}
 			<Button variant="primary" size="sm" onclick={() => (showForm = true)}>
 				<Plus size={14} /> {t().apps.newRecord}
 			</Button>
@@ -84,24 +88,17 @@
 							<th>{field.label}</th>
 						{/each}
 						<th class="th-date">{t().common.createdAt}</th>
-						<th class="th-action"></th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each data.records as record (record.id)}
-						<tr>
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+						<tr class="clickable-row" onclick={() => goto(`/apps/${data.app.id}/records/${record.id}`)}>
 							{#each listFields as field (field.id)}
 								<td>{record.dataParsed[field.id] ?? '—'}</td>
 							{/each}
-							<td class="td-date">{formatDateTime(record.created_at)}</td>
-							<td class="td-action">
-								<form method="POST" action="?/delete" use:enhance={enh()}>
-									<input type="hidden" name="id" value={record.id} />
-									<button type="submit" class="del-btn" aria-label="Delete record">
-										<Trash2 size={12} />
-									</button>
-								</form>
-							</td>
+							<td class="td-date">{formatDateTimeJP(record.created_at)}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -126,8 +123,24 @@
 								<option value={opt.label}>{opt.label}</option>
 							{/each}
 						</select>
-					{:else if field.type === 'checkbox'}
-						<input id="f-{field.id}" name={field.id} type="checkbox" value="true" />
+					{:else if field.type === 'radio' && field.options}
+						<div class="radio-group" role="radiogroup">
+							{#each field.options as opt (opt.id)}
+								<label class="radio-label">
+									<input type="radio" name={field.id} value={opt.label} required={field.required} />
+									{opt.label}
+								</label>
+							{/each}
+						</div>
+					{:else if field.type === 'checkbox' && field.options && field.options.length > 0}
+						<div class="checkbox-group">
+							{#each field.options as opt (opt.id)}
+								<label class="checkbox-label">
+									<input type="checkbox" name={field.id} value={opt.label} />
+									{opt.label}
+								</label>
+							{/each}
+						</div>
 					{:else if field.type === 'number'}
 						<Input id="f-{field.id}" name={field.id} type="number" placeholder={field.placeholder} required={field.required} />
 					{:else if field.type === 'date'}
@@ -225,23 +238,11 @@
 	}
 
 	.th-date { width: 160px; }
-	.th-action { width: 48px; }
 	.td-date { color: var(--color-text-tertiary); font-size: 0.75rem; }
-	.td-action { text-align: right; }
 
-	.del-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		border: none;
-		background: none;
-		color: var(--color-text-tertiary);
+	.clickable-row {
 		cursor: pointer;
-		border-radius: var(--radius-sm);
-
-		&:hover { background-color: var(--color-danger-light); color: var(--color-danger); }
+		&:hover { background-color: var(--color-hover); }
 	}
 
 	.empty-state {
@@ -256,6 +257,16 @@
 
 	.form-fields { display: flex; flex-direction: column; gap: var(--space-lg); margin-bottom: var(--space-xl); }
 	.field { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+	.radio-group, .checkbox-group { display: flex; flex-direction: column; gap: var(--space-sm); }
+	.radio-label, .checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		font-size: 0.875rem;
+		cursor: pointer;
+		input { accent-color: var(--color-primary); }
+	}
 	.select-input {
 		height: 36px;
 		padding: 0 var(--space-md);

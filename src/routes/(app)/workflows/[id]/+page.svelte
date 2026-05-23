@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { Button, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
-	import { WORKFLOW_STATUS_LABELS, WORKFLOW_PRIORITY_LABELS } from '$lib/types/workflow';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { formatDate, formatDateTime } from '$lib/utils';
+	import { formatDateJP, formatDateTimeJP } from '$lib/utils';
 	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
@@ -85,11 +84,11 @@
 			<div class="workflow-meta">
 				<span>by {wf.requester?.name ?? '—'}</span>
 				<span>·</span>
-				<span>{formatDate(wf.created_at)}</span>
+				<span>{formatDateJP(wf.created_at)}</span>
 			</div>
 		</div>
 		<span class="status-badge badge-{statusColor[wf.status] ?? 'neutral'}">
-			{WORKFLOW_STATUS_LABELS[wf.status]}
+			{t().workflow.statuses[wf.status]}
 		</span>
 	</div>
 
@@ -158,9 +157,11 @@
 										<div class="step-comment">{step.comment}</div>
 									{/if}
 								</div>
-								<span class="step-status status-{step.status}">{step.status}</span>
+								<span class="step-status status-{step.status}">
+									{t().workflow.approvalStatuses[step.status]}
+								</span>
 								{#if step.approved_at}
-									<span class="step-date">{formatDate(step.approved_at)}</span>
+									<span class="step-date">{formatDateJP(step.approved_at)}</span>
 								{/if}
 							</div>
 						{/each}
@@ -254,7 +255,7 @@
 							<div class="comment-body">
 								<div class="comment-meta">
 									<strong>{comment.account?.name ?? t().common.unknown}</strong>
-									<span>{formatDateTime(comment.created_at)}</span>
+									<span>{formatDateTimeJP(comment.created_at)}</span>
 								</div>
 								<p class="comment-content">{comment.content}</p>
 							</div>
@@ -273,7 +274,7 @@
 				<dl class="meta-list">
 					<div class="meta-row">
 						<dt>{t().workflow.priority}</dt>
-						<dd>{WORKFLOW_PRIORITY_LABELS[wf.priority]}</dd>
+						<dd>{t().workflow.priorities[wf.priority]}</dd>
 					</div>
 					{#if wf.category}
 						<div class="meta-row">
@@ -294,13 +295,13 @@
 					{#if wf.submitted_at}
 						<div class="meta-row">
 							<dt>{t().common.createdAt}</dt>
-							<dd>{formatDate(wf.submitted_at)}</dd>
+							<dd>{formatDateJP(wf.submitted_at)}</dd>
 						</div>
 					{/if}
 					{#if wf.completed_at}
 						<div class="meta-row">
 							<dt>{t().common.updatedAt}</dt>
-							<dd>{formatDate(wf.completed_at)}</dd>
+							<dd>{formatDateJP(wf.completed_at)}</dd>
 						</div>
 					{/if}
 				</dl>

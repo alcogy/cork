@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
-	import { WORKFLOW_STATUS_LABELS, WORKFLOW_STATUSES, WORKFLOW_PRIORITIES, WORKFLOW_PRIORITY_LABELS } from '$lib/types/workflow';
+	import { WORKFLOW_STATUSES, WORKFLOW_PRIORITIES } from '$lib/types/workflow';
 	import { Plus } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import { formatDate } from '$lib/utils';
+	import { formatDateJP } from '$lib/utils';
 	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
@@ -47,7 +47,7 @@
 		<select class="status-select" bind:value={statusFilter} onchange={navigate} aria-label="Filter by status">
 			<option value="all">{t().common.all}</option>
 			{#each WORKFLOW_STATUSES as s (s)}
-				<option value={s}>{WORKFLOW_STATUS_LABELS[s]}</option>
+				<option value={s}>{t().workflow.statuses[s]}</option>
 			{/each}
 		</select>
 	</div>
@@ -63,11 +63,11 @@
 							{#if wf.category}
 								<span>· {wf.category.label}</span>
 							{/if}
-							<span>· {formatDate(wf.created_at)}</span>
+							<span>· {formatDateJP(wf.created_at)}</span>
 						</div>
 					</div>
 					<span class="status-badge badge-{statusColor[wf.status] ?? 'neutral'}">
-						{WORKFLOW_STATUS_LABELS[wf.status]}
+						{t().workflow.statuses[wf.status]}
 					</span>
 				</a>
 			{/each}
@@ -82,7 +82,13 @@
 <Modal open={showEditor} title={t().workflow.new} onclose={() => (showEditor = false)}>
 	<form method="POST" action="?/create" use:enhance={() => {
 		saving = true;
-		return async ({ update }) => {
+		return async ({ result, update }) => {
+			if (result.type === 'success' && result.data?.id) {
+				showEditor = false;
+				saving = false;
+				goto(`/workflows/${result.data.id}`);
+				return;
+			}
 			await update();
 			await invalidateAll();
 			showEditor = false;
@@ -102,7 +108,7 @@
 				<Label for="priority">{t().workflow.priority}</Label>
 				<select id="priority" name="priority" class="select-input">
 					{#each WORKFLOW_PRIORITIES as p (p)}
-						<option value={p} selected={p === 'normal'}>{WORKFLOW_PRIORITY_LABELS[p]}</option>
+						<option value={p} selected={p === 'normal'}>{t().workflow.priorities[p]}</option>
 					{/each}
 				</select>
 			</div>

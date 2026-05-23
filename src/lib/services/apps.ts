@@ -141,7 +141,12 @@ export async function createRecord(ctx: ServiceCtx, appId: string, formData: For
 	const data: Record<string, unknown> = {};
 
 	for (const field of fields) {
-		const val = formData.get(field.id)?.toString() ?? '';
+		let val: string;
+		if (field.type === 'checkbox' && field.options && field.options.length > 0) {
+			val = formData.getAll(field.id).map(String).join(', ');
+		} else {
+			val = formData.get(field.id)?.toString() ?? '';
+		}
 		if (field.required && !val) return fail(400, { error: `${field.label} is required` });
 		data[field.id] = val;
 	}
@@ -157,6 +162,67 @@ export async function createRecord(ctx: ServiceCtx, appId: string, formData: For
 		action: 'create',
 		resource_type: 'app_record',
 		resource_id: record.id,
+		request
+	});
+	return { success: true };
+}
+
+export async function getRecord(ctx: ServiceCtx, appId: string, recordId: string) {
+	const { db } = ctx;
+	const app = await db.query.apps.findFirst({ where: eq(schema.apps.id, appId) });
+	if (!app) throw error(404, 'App not found');
+
+	const record = await db.query.app_records.findFirst({
+		where: eq(schema.app_records.id, recordId),
+		with: { creator: true }
+	});
+	if (!record) throw error(404, 'Record not found');
+
+	const fields: AppField[] = JSON.parse(app.fields);
+	return {
+		app: { ...app, fieldsParsed: fields },
+		record: { ...record, dataParsed: JSON.parse(record.data) as Record<string, unknown> }
+	};
+}
+
+export async function updateRecord(
+	ctx: ServiceCtx,
+	appId: string,
+	recordId: string,
+	formData: FormData
+) {
+	const { db, env, user, request } = ctx;
+	const app = await db.query.apps.findFirst({ where: eq(schema.apps.id, appId) });
+	if (!app) return fail(404, { error: 'App not found' });
+
+	const fields: AppField[] = JSON.parse(app.fields);
+	const data: Record<string, unknown> = {};
+
+	for (const field of fields) {
+		let val: string;
+		if (field.type === 'checkbox' && field.options && field.options.length > 0) {
+			val = formData.getAll(field.id).map(String).join(', ');
+		} else {
+			val = formData.get(field.id)?.toString() ?? '';
+		}
+		if (field.required && !val) return fail(400, { error: `${field.label} is required` });
+		data[field.id] = val;
+	}
+
+	await db
+		.update(schema.app_records)
+		.set({
+			data: JSON.stringify(data),
+			updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19)
+		})
+		.where(eq(schema.app_records.id, recordId));
+
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'app_record',
+		resource_id: recordId,
 		request
 	});
 	return { success: true };

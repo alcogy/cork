@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { and, asc, count, desc, eq, max } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
-import { asc, count, desc, eq, max } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
 import type { WORKFLOW_STATUSES } from '$lib/types/workflow';
@@ -124,7 +124,7 @@ export async function createWorkflow(ctx: ServiceCtx, data: unknown) {
 		resource_id: workflow.id,
 		request
 	});
-	return { success: true };
+	return { success: true, id: workflow.id };
 }
 
 export async function addApprover(ctx: ServiceCtx, workflowId: string, approverId: string) {
@@ -228,15 +228,42 @@ export async function approveWorkflow(
 	const { db, env, user } = ctx;
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
+	// Update only the current user's approval step
 	await db
 		.update(schema.workflow_approvals)
 		.set({ status: 'approved', comment: comment ?? null, approved_at: now })
-		.where(eq(schema.workflow_approvals.workflow_id, workflowId));
+		.where(
+			and(
+				eq(schema.workflow_approvals.workflow_id, workflowId),
+				eq(schema.workflow_approvals.approver_id, user.id)
+			)
+		);
 
-	await db
-		.update(schema.workflows)
-		.set({ status: 'approved', completed_at: now, updated_at: now })
-		.where(eq(schema.workflows.id, workflowId));
+	// Check if all approval steps are now approved
+	const allApprovals = await db
+		.select()
+		.from(schema.workflow_approvals)
+		.where(eq(schema.workflow_approvals.workflow_id, workflowId))
+		.orderBy(asc(schema.workflow_approvals.step_order));
+
+	const allApproved = allApprovals.every((a) => a.status === 'approved');
+	const nextPending = allApprovals.find((a) => a.status === 'pending');
+
+	if (allApproved) {
+		await db
+			.update(schema.workflows)
+			.set({ status: 'approved', completed_at: now, updated_at: now, current_approver_id: null })
+			.where(eq(schema.workflows.id, workflowId));
+	} else {
+		await db
+			.update(schema.workflows)
+			.set({
+				status: 'in_review',
+				updated_at: now,
+				current_approver_id: nextPending?.approver_id ?? null
+			})
+			.where(eq(schema.workflows.id, workflowId));
+	}
 
 	if (comment) {
 		await db.insert(schema.workflow_comments).values({
@@ -264,14 +291,21 @@ export async function rejectWorkflow(
 	const { db, env, user } = ctx;
 	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
+	// Update only the current user's approval step
 	await db
 		.update(schema.workflow_approvals)
 		.set({ status: 'rejected', comment: comment ?? null, approved_at: now })
-		.where(eq(schema.workflow_approvals.workflow_id, workflowId));
+		.where(
+			and(
+				eq(schema.workflow_approvals.workflow_id, workflowId),
+				eq(schema.workflow_approvals.approver_id, user.id)
+			)
+		);
 
+	// One rejection closes the whole workflow
 	await db
 		.update(schema.workflows)
-		.set({ status: 'rejected', completed_at: now, updated_at: now })
+		.set({ status: 'rejected', completed_at: now, updated_at: now, current_approver_id: null })
 		.where(eq(schema.workflows.id, workflowId));
 
 	if (comment) {

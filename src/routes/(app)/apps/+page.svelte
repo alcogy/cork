@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Modal, Input, Label, Textarea } from '$lib/ui';
+	import { Button, Modal, Input, Label, Textarea, ConfirmDialog } from '$lib/ui';
 	import { Plus, Trash2, Wrench, Bookmark, BookmarkCheck } from '@lucide/svelte';
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -11,6 +11,17 @@
 	let showEditor = $state(false);
 	let saving = $state(false);
 	let bookmarkFilter = $state(data.bookmarkOnly);
+
+	let deleteAppId = $state<string | null>(null);
+	let showDeleteDialog = $state(false);
+	let deleteFormEl: HTMLFormElement;
+
+	const isAdmin = $derived(data.user?.role === 'admin');
+
+	function openDeleteDialog(id: string) {
+		deleteAppId = id;
+		showDeleteDialog = true;
+	}
 
 	function toggleBookmarkFilter() {
 		bookmarkFilter = !bookmarkFilter;
@@ -39,7 +50,6 @@
 	<div class="page-header">
 		<div>
 			<h1 class="page-title">{t().apps.title}</h1>
-			<p class="page-subtitle">{t().app.tagline}</p>
 		</div>
 		<div class="header-actions">
 			<Button
@@ -94,19 +104,19 @@
 						<a href="/apps/{app.id}" class="btn-link">
 							<Button variant="secondary" size="sm">{t().apps.records}</Button>
 						</a>
-						<a href="/apps/{app.id}/build" class="btn-link">
-							<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
-						</a>
-						<form
-							method="POST"
-							action="?/delete"
-							use:enhance={() => async ({ update }) => { await update(); await invalidateAll(); }}
-						>
-							<input type="hidden" name="id" value={app.id} />
-							<button type="submit" class="delete-btn" aria-label="Delete app">
+						{#if isAdmin}
+							<a href="/apps/{app.id}/build" class="btn-link">
+								<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>
+							</a>
+							<button
+								type="button"
+								class="delete-btn"
+								aria-label="Delete app"
+								onclick={() => openDeleteDialog(app.id)}
+							>
 								<Trash2 size={14} />
 							</button>
-						</form>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -130,7 +140,13 @@
 <Modal open={showEditor} title={t().apps.new} onclose={() => (showEditor = false)}>
 	<form method="POST" action="?/create" use:enhance={() => {
 		saving = true;
-		return async ({ update }) => {
+		return async ({ result, update }) => {
+			if (result.type === 'success' && result.data?.id) {
+				showEditor = false;
+				saving = false;
+				goto(`/apps/${result.data.id}/build`);
+				return;
+			}
 			await update();
 			await invalidateAll();
 			showEditor = false;
@@ -153,6 +169,25 @@
 		</div>
 	</form>
 </Modal>
+
+<form
+	bind:this={deleteFormEl}
+	method="POST"
+	action="?/delete"
+	style="display:none"
+	use:enhance={() => async ({ update }) => { await update(); await invalidateAll(); }}
+>
+	<input type="hidden" name="id" value={deleteAppId ?? ''} />
+</form>
+
+<ConfirmDialog
+	bind:open={showDeleteDialog}
+	title={t().apps.delete}
+	message={t().apps.deleteConfirm}
+	confirmLabel={t().apps.delete}
+	onconfirm={() => deleteFormEl?.requestSubmit()}
+	oncancel={() => (deleteAppId = null)}
+/>
 
 <style lang="scss">
 	.page { display: flex; flex-direction: column; gap: var(--space-xl); }

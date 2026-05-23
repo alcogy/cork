@@ -20,6 +20,26 @@ export function formatDateTime(dateString: string | null | undefined, locale = '
 	});
 }
 
+export function formatDateJP(dateString: string | null | undefined): string {
+	if (!dateString) return '—';
+	const d = new Date(dateString);
+	const Y = d.getFullYear();
+	const M = String(d.getMonth() + 1).padStart(2, '0');
+	const D = String(d.getDate()).padStart(2, '0');
+	return `${Y}/${M}/${D}`;
+}
+
+export function formatDateTimeJP(dateString: string | null | undefined): string {
+	if (!dateString) return '—';
+	const d = new Date(dateString);
+	const Y = d.getFullYear();
+	const M = String(d.getMonth() + 1).padStart(2, '0');
+	const D = String(d.getDate()).padStart(2, '0');
+	const h = String(d.getHours()).padStart(2, '0');
+	const m = String(d.getMinutes()).padStart(2, '0');
+	return `${Y}/${M}/${D} ${h}:${m}`;
+}
+
 export function formatCurrency(amount: number | null | undefined, currency = 'USD'): string {
 	if (amount === null || amount === undefined) return '—';
 	return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);

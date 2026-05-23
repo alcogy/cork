@@ -29,7 +29,7 @@ export const actions = {
 
 	addComment: async ({ request, platform, params, locals }) => {
 		const f = await request.formData();
-		return addComment(makeCtx(platform!, locals), params.id, f.get('content')?.toString().trim() ?? '');
+		return addComment(makeCtx(platform!, locals), params.id, { content: f.get('content')?.toString().trim() ?? '' });
 	},
 
 	submit: async ({ platform, params, locals }) => {

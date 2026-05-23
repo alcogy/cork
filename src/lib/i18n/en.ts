@@ -262,7 +262,8 @@ export const en = {
 			normal: 'Normal',
 			high: 'High',
 			urgent: 'Urgent'
-		}
+		},
+		approvalStatuses: { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' }
 	},
 	progress: {
 		title: 'Progress',
@@ -321,6 +322,10 @@ export const en = {
 		options: 'Options',
 		addOption: 'Add option',
 		selectField: 'Select a field to edit its settings',
+		recordDetail: 'Record detail',
+		editRecord: 'Edit record',
+		deleteRecord: 'Delete record',
+		deleteRecordConfirm: 'Delete this record? This cannot be undone.',
 		fieldTypes: {
 			text: 'Single-line text',
 			textarea: 'Multi-line text',

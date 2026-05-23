@@ -4,9 +4,9 @@
 	import {
 		ArrowLeft, Save, Type, AlignLeft, Hash, Calendar, Clock,
 		ChevronDown, CheckSquare, CircleDot, GripVertical, Trash2, Plus, X,
-		Eye, EyeOff, Link, User, OctagonAlert
+		Eye, EyeOff, Link, User, OctagonAlert, Pencil
 	} from '@lucide/svelte';
-	import { ConfirmDialog } from '$lib/ui';
+	import { ConfirmDialog, Modal, Button, Input, Label, Textarea } from '$lib/ui';
 	import { t } from '$lib/i18n';
 	import type { AppField, FieldType } from '$lib/types/apps';
 	import type { PageData } from './$types';
@@ -19,6 +19,21 @@
 	let selectedFieldId = $state<string | null>(null);
 	let saved = $state(false);
 	let showDeleteDialog = $state(false);
+	let showNameEditor = $state(false);
+	let editName = $state('');
+	let editDescription = $state('');
+
+	function openNameEditor() {
+		editName = appName;
+		editDescription = appDescription;
+		showNameEditor = true;
+	}
+
+	function saveNameEdit() {
+		appName = editName;
+		appDescription = editDescription;
+		showNameEditor = false;
+	}
 
 	const fieldsJson = $derived(JSON.stringify(fields));
 	const selectedField = $derived(fields.find((f) => f.id === selectedFieldId) ?? null);
@@ -86,24 +101,23 @@
 
 <form method="POST" action="?/save" use:enhance={() => {
 	return async ({ update }) => {
-		await update();
+		await update({ reset: false });
 		saved = true;
 		setTimeout(() => (saved = false), 2000);
 	};
 }} class="build-shell">
 	<input type="hidden" name="fields" value={fieldsJson} />
+	<input type="hidden" name="name" value={appName} />
+	<input type="hidden" name="description" value={appDescription} />
 
 	<!-- Top bar -->
 	<div class="topbar">
 		<a href="/apps/{data.app.id}" class="back-link"><ArrowLeft size={16} /> {t().common.back}</a>
 		<div class="app-name-wrap">
-			<input
-				class="app-name-input"
-				name="name"
-				bind:value={appName}
-				placeholder={t().apps.name}
-				required
-			/>
+			<span class="app-name-text">{appName || t().apps.name}</span>
+			<button type="button" class="edit-name-btn" onclick={openNameEditor} aria-label="Edit app name">
+				<Pencil size={13} />
+			</button>
 		</div>
 		<div class="topbar-actions">
 			{#if saved}
@@ -117,8 +131,6 @@
 			</button>
 		</div>
 	</div>
-
-	<input type="hidden" name="description" value={appDescription} />
 
 	<!-- Three-column layout -->
 	<div class="build-body">
@@ -193,7 +205,7 @@
 					/>
 				</div>
 
-				{#if sf.type !== 'checkbox'}
+				{#if sf.type !== 'checkbox' && sf.type !== 'radio'}
 					<div class="settings-field">
 						<label class="settings-label" for="sf-placeholder">{t().apps.fieldPlaceholder}</label>
 						<input
@@ -276,6 +288,23 @@
 	oncancel={() => (showDeleteDialog = false)}
 />
 
+<Modal open={showNameEditor} title={t().apps.edit} onclose={() => (showNameEditor = false)}>
+	<div class="name-edit-fields">
+		<div class="name-edit-field">
+			<Label for="edit-name" required>{t().apps.name}</Label>
+			<Input id="edit-name" bind:value={editName} required />
+		</div>
+		<div class="name-edit-field">
+			<Label for="edit-desc">{t().apps.description}</Label>
+			<Textarea id="edit-desc" bind:value={editDescription} rows={2} />
+		</div>
+	</div>
+	<div class="name-edit-actions">
+		<Button variant="secondary" onclick={() => (showNameEditor = false)}>{t().common.cancel}</Button>
+		<Button variant="primary" onclick={saveNameEdit} disabled={!editName.trim()}>{t().common.save}</Button>
+	</div>
+</Modal>
+
 <style lang="scss">
 	.build-shell {
 		display: flex;
@@ -308,22 +337,46 @@
 		&:hover { color: var(--color-text); }
 	}
 
-	.app-name-wrap { flex: 1; min-width: 0; }
+	.app-name-wrap {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+	}
 
-	.app-name-input {
-		width: 100%;
-		height: 34px;
-		padding: 0 var(--space-sm);
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: var(--radius-md);
+	.app-name-text {
 		font-size: 0.9375rem;
 		font-weight: 600;
 		color: var(--color-text);
-		font-family: inherit;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 
-		&:hover { border-color: var(--color-border); }
-		&:focus { outline: none; border-color: var(--color-border-focus); background-color: var(--color-input-bg); }
+	.edit-name-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		border: none;
+		background: none;
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-sm);
+		flex-shrink: 0;
+		&:hover { background-color: var(--color-hover); color: var(--color-text); }
+	}
+
+	.name-edit-fields { display: flex; flex-direction: column; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+	.name-edit-field { display: flex; flex-direction: column; gap: var(--space-sm); }
+	.name-edit-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-sm);
+		padding-top: var(--space-lg);
+		border-top: 1px solid var(--color-border-light);
 	}
 
 	.topbar-actions {

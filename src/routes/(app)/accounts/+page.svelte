@@ -19,7 +19,7 @@
 	const columns = $derived([
 		{ key: 'name', label: t().account.name },
 		{ key: 'email', label: t().account.email },
-		{ key: 'role', label: t().account.role, width: '100px' },
+		{ key: 'role', label: t().account.role, width: '140px' },
 		{ key: 'created_at', label: t().common.createdAt, width: '140px' }
 	]);
 
