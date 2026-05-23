@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import Button from './Button.svelte';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { t } from '$lib/i18n';
 
 	interface AccountData {
@@ -34,9 +35,11 @@
 			return async ({ result, update }) => {
 				if (result.type === 'success') {
 					open = false;
+					await invalidateAll();
 					onsave?.();
+				} else {
+					await update();
 				}
-				await update();
 			};
 		}}
 	>

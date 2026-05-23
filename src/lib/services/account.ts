@@ -18,6 +18,7 @@ const CreateAccountSchema = z.object({
 
 const UpdateAccountSchema = z.object({
 	name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+	email: z.email({ error: 'Invalid email address' }),
 	role: RoleSchema.default('general'),
 	password: z.string().max(128, 'Password too long').optional()
 });
@@ -83,6 +84,7 @@ export async function updateAccount(ctx: ServiceCtx, id: string, data: unknown) 
 
 	const updateData: Record<string, unknown> = {
 		name: r.data.name,
+		email: r.data.email,
 		role: r.data.role,
 		updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19)
 	};

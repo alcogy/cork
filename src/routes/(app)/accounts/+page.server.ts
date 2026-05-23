@@ -22,6 +22,7 @@ export const actions = {
 		const f = await request.formData();
 		return updateAccount(makeCtx(platform!, locals, request), f.get('id')?.toString() ?? '', {
 			name: f.get('name')?.toString().trim() ?? '',
+			email: f.get('email')?.toString().trim().toLowerCase() ?? '',
 			role: (f.get('role')?.toString() || 'general') as 'admin' | 'general',
 			password: f.get('password')?.toString() || undefined
 		});

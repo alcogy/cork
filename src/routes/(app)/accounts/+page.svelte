@@ -93,7 +93,6 @@
 <AccountEditor
 	bind:open={showEditor}
 	account={editingAccount}
-	onsave={() => invalidateAll()}
 />
 
 <ConfirmDialog
