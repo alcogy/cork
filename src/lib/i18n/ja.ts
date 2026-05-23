@@ -323,7 +323,13 @@ export const ja = {
 		email: 'メールアドレス',
 		currentPassword: '現在のパスワード',
 		newPassword: '新しいパスワード',
-		confirmPassword: 'パスワードの確認'
+		confirmPassword: 'パスワードの確認',
+		avatar: 'アバター',
+		uploadAvatar: 'アバターを変更',
+		deleteAvatar: '削除',
+		avatarHint: 'JPEG・PNG・GIF・WebP、2MB以内',
+		avatarUploaded: 'アバターを更新しました。',
+		avatarDeleted: 'アバターを削除しました。'
 	},
 	settings: {
 		title: '設定',

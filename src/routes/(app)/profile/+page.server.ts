@@ -11,6 +11,9 @@ import {
 } from '$lib/server/auth/index';
 import { writeAuditLog } from '$lib/server/audit';
 
+const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
 export const load: PageServerLoad = async ({ platform, locals }) => {
 	const db = drizzle(platform!.env.DB, { schema });
 	const account = await db.query.accounts.findFirst({
@@ -70,5 +73,54 @@ export const actions = {
 		});
 
 		return { success: true };
+	},
+
+	uploadAvatar: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		const file = f.get('avatar') as File;
+
+		if (!file || file.size === 0) return fail(400, { error: 'No file selected' });
+		if (file.size > AVATAR_MAX_BYTES) return fail(400, { error: 'File exceeds 2 MB limit' });
+		if (!AVATAR_ALLOWED_TYPES.includes(file.type)) return fail(400, { error: 'Only JPEG, PNG, GIF, WebP allowed' });
+
+		const r2Key = `avatars/${locals.user!.id}`;
+		await platform!.env.STORAGE.put(r2Key, await file.arrayBuffer(), {
+			httpMetadata: { contentType: file.type }
+		});
+
+		const db = drizzle(platform!.env.DB, { schema });
+		await db
+			.update(schema.accounts)
+			.set({ avatar_key: r2Key, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
+			.where(eq(schema.accounts.id, locals.user!.id));
+
+		await writeAuditLog({
+			db: platform!.env.DB,
+			account_id: locals.user!.id,
+			action: 'update',
+			resource_type: 'account',
+			resource_id: locals.user!.id,
+			request
+		});
+
+		return { avatarSuccess: true };
+	},
+
+	deleteAvatar: async ({ platform, locals }) => {
+		const db = drizzle(platform!.env.DB, { schema });
+		const account = await db.query.accounts.findFirst({
+			where: eq(schema.accounts.id, locals.user!.id)
+		});
+
+		if (account?.avatar_key) {
+			await platform!.env.STORAGE.delete(account.avatar_key);
+		}
+
+		await db
+			.update(schema.accounts)
+			.set({ avatar_key: null, updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19) })
+			.where(eq(schema.accounts.id, locals.user!.id));
+
+		return { avatarDeleted: true };
 	}
 } satisfies Actions;

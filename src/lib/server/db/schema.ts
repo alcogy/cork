@@ -11,6 +11,7 @@ export const accounts = sqliteTable('accounts', {
 	password_hash: text('password_hash').notNull(),
 	name: text('name').notNull(),
 	role: text('role', { enum: ['admin', 'general'] }).notNull().default('general'),
+	avatar_key: text('avatar_key'),
 	created_at: text('created_at')
 		.notNull()
 		.default(sql`(datetime('now'))`),

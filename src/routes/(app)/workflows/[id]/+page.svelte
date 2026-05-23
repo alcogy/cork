@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Input, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
+	import { Avatar, Button, Input, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -146,7 +146,7 @@
 						{#each wf.approvals as approval (approval.id)}
 							<div class="approver-row">
 								<span class="step-num">{approval.step_order}</span>
-								<div class="approver-avatar">{approval.approver.name.charAt(0).toUpperCase()}</div>
+								<Avatar name={approval.approver.name} accountId={approval.approver.id} avatarKey={approval.approver.avatar_key} size={28} />
 								<span class="approver-name">{approval.approver.name}</span>
 								<form method="POST" action="?/removeApprover" use:enhance={enh()}>
 									<input type="hidden" name="id" value={approval.id} />
@@ -288,7 +288,7 @@
 				<div class="comment-list">
 					{#each wf.comments as comment (comment.id)}
 						<div class="comment-item">
-							<div class="comment-avatar">{comment.account?.name?.charAt(0).toUpperCase() ?? '?'}</div>
+							<Avatar name={comment.account?.name ?? '?'} accountId={comment.account?.id} avatarKey={comment.account?.avatar_key} size={32} />
 							<div class="comment-body">
 								<div class="comment-meta">
 									<strong>{comment.account?.name ?? t().common.unknown}</strong>
@@ -487,19 +487,6 @@
 		flex-shrink: 0;
 	}
 
-	.approver-avatar {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		background-color: var(--color-primary-light);
-		color: var(--color-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.75rem;
-		font-weight: 700;
-		flex-shrink: 0;
-	}
 
 	.approver-name { flex: 1; font-size: 0.875rem; }
 
@@ -598,19 +585,6 @@
 	.comment-list { display: flex; flex-direction: column; gap: var(--space-md); }
 
 	.comment-item { display: flex; gap: var(--space-md); }
-	.comment-avatar {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background-color: var(--color-primary-light);
-		color: var(--color-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 0.8125rem;
-		flex-shrink: 0;
-	}
 	.comment-body { flex: 1; }
 	.comment-meta { display: flex; gap: var(--space-md); font-size: 0.75rem; color: var(--color-text-secondary); margin-bottom: 4px; strong { color: var(--color-text); } }
 	.comment-content { font-size: 0.875rem; white-space: pre-wrap; }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm, FileUploadDialog } from '$lib/ui';
+	import { Avatar, Button, Modal, Input, Label, Textarea, ConfirmDialog, WBSForm, FileUploadDialog } from '$lib/ui';
 	import type { WBSFormData } from '$lib/ui/WBSForm.svelte';
 	import { PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS } from '$lib/types/project';
 	import { ArrowLeft, Plus, Trash2, UserPlus, UserMinus, MessageSquare, Paperclip } from '@lucide/svelte';
@@ -286,7 +286,7 @@
 			<div class="member-list">
 				{#each data.project.members as member (member.id)}
 					<div class="member-row">
-						<div class="member-avatar">{member.account.name.charAt(0).toUpperCase()}</div>
+						<Avatar name={member.account.name} accountId={member.account_id} avatarKey={member.account.avatar_key} size={32} />
 						<div class="member-info">
 							<div class="member-name">{member.account.name}</div>
 							<div class="member-role">{member.role}</div>
@@ -349,7 +349,7 @@
 			<div class="activity-list">
 				{#each data.project.activities as act (act.id)}
 					<div class="activity-item">
-						<div class="activity-avatar">{act.account?.name?.charAt(0).toUpperCase() ?? '?'}</div>
+						<Avatar name={act.account?.name ?? '?'} accountId={act.account?.id} avatarKey={act.account?.avatar_key} size={32} />
 						<div class="activity-body">
 							<div class="activity-meta">
 								<strong>{act.account?.name ?? t().common.unknown}</strong>
@@ -781,19 +781,6 @@
 		border-radius: var(--radius-md);
 	}
 
-	.member-avatar {
-		width: 36px;
-		height: 36px;
-		border-radius: 50%;
-		background-color: var(--color-primary-light);
-		color: var(--color-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 0.875rem;
-		flex-shrink: 0;
-	}
 
 	.member-info { flex: 1; }
 	.member-name { font-weight: 500; font-size: 0.875rem; }
@@ -818,19 +805,6 @@
 		gap: var(--space-md);
 	}
 
-	.activity-avatar {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background-color: var(--color-primary-light);
-		color: var(--color-primary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 0.8125rem;
-		flex-shrink: 0;
-	}
 
 	.activity-body { flex: 1; }
 	.activity-meta { display: flex; gap: var(--space-md); font-size: 0.75rem; color: var(--color-text-secondary); margin-bottom: 4px; strong { color: var(--color-text); } }

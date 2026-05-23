@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Input, Label } from '$lib/ui';
+	import { Avatar, Button, Input, Label } from '$lib/ui';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { t } from '$lib/i18n';
@@ -8,6 +8,8 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let saving = $state(false);
+	let avatarInput = $state<HTMLInputElement | null>(null);
+	let uploadingAvatar = $state(false);
 
 	function enh() {
 		return () => {
@@ -16,6 +18,18 @@
 				await update();
 				await invalidateAll();
 				saving = false;
+			};
+		};
+	}
+
+	function enhAvatar(onDone?: () => void) {
+		return () => {
+			uploadingAvatar = true;
+			return async ({ update }: { update: () => Promise<void> }) => {
+				await update();
+				await invalidateAll();
+				uploadingAvatar = false;
+				onDone?.();
 			};
 		};
 	}
@@ -32,11 +46,50 @@
 		<section class="card">
 			<h2 class="section-title">{t().profile.accountInfo}</h2>
 
+			<!-- Avatar -->
+			<div class="avatar-section">
+				<Avatar
+					name={data.account?.name ?? ''}
+					accountId={data.account?.id}
+					avatarKey={data.account?.avatar_key}
+					size={72}
+				/>
+				<div class="avatar-actions">
+					<form method="POST" action="?/uploadAvatar" enctype="multipart/form-data" use:enhance={enhAvatar(() => { if (avatarInput) avatarInput.value = ''; })}>
+						<input
+							bind:this={avatarInput}
+							type="file"
+							name="avatar"
+							accept="image/jpeg,image/png,image/gif,image/webp"
+							class="avatar-file-input"
+							onchange={(e) => (e.currentTarget.form as HTMLFormElement)?.requestSubmit()}
+						/>
+						<Button type="button" variant="secondary" size="sm" disabled={uploadingAvatar} onclick={() => avatarInput?.click()}>
+							{uploadingAvatar ? t().common.saving : t().profile.uploadAvatar}
+						</Button>
+					</form>
+					{#if data.account?.avatar_key}
+						<form method="POST" action="?/deleteAvatar" use:enhance={enhAvatar()}>
+							<Button type="submit" variant="ghost" size="sm" disabled={uploadingAvatar}>
+								{t().profile.deleteAvatar}
+							</Button>
+						</form>
+					{/if}
+					<p class="avatar-hint">{t().profile.avatarHint}</p>
+				</div>
+			</div>
+
 			{#if form?.error}
 				<p class="error-msg">{form.error}</p>
 			{/if}
 			{#if form?.success}
 				<p class="success-msg">{t().profile.savedSuccessfully}</p>
+			{/if}
+			{#if form?.avatarSuccess}
+				<p class="success-msg">{t().profile.avatarUploaded}</p>
+			{/if}
+			{#if form?.avatarDeleted}
+				<p class="success-msg">{t().profile.avatarDeleted}</p>
 			{/if}
 
 			<form method="POST" action="?/update" use:enhance={enh()}>
@@ -119,6 +172,32 @@
 </div>
 
 <style lang="scss">
+	.avatar-section {
+		display: flex;
+		align-items: center;
+		gap: var(--space-lg);
+		margin-bottom: var(--space-lg);
+		padding-bottom: var(--space-lg);
+		border-bottom: 1px solid var(--color-border-light);
+	}
+
+	.avatar-actions {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+		align-items: flex-start;
+	}
+
+	.avatar-file-input {
+		display: none;
+	}
+
+	.avatar-hint {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
 	.profile-grid {
 		display: grid;
 		grid-template-columns: 1fr 300px;

@@ -371,7 +371,13 @@ export const en = {
 		currentPasswordHint: 'Required to set a new password',
 		newPasswordHint: 'Leave blank to keep current',
 		accountDetails: 'Account details',
-		memberSince: 'Member since'
+		memberSince: 'Member since',
+		avatar: 'Avatar',
+		uploadAvatar: 'Upload avatar',
+		deleteAvatar: 'Delete avatar',
+		avatarHint: 'JPEG, PNG, GIF, WebP · Max 2 MB',
+		avatarUploaded: 'Avatar updated.',
+		avatarDeleted: 'Avatar deleted.'
 	},
 	fileUpload: {
 		title: 'Upload file',
