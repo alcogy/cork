@@ -59,6 +59,9 @@ const CreateContactSchema = z.object({
 	note: z.string().max(2000, 'Note too long').nullable().optional()
 });
 
+const UpdateContactSchema = CreateContactSchema;
+const UpdateScheduleSchema = CreateScheduleSchema;
+
 export async function listCustomers(
 	ctx: ServiceCtx,
 	opts: { search: string; statusFilter: string; page: number }
@@ -384,6 +387,44 @@ export async function createContact(ctx: ServiceCtx, customerId: string, data: u
 		action: 'create',
 		resource_type: 'contact',
 		resource_id: contact.id,
+		request
+	});
+	return { success: true };
+}
+
+export async function updateContact(ctx: ServiceCtx, id: string, data: unknown) {
+	const { db, env, user, request } = ctx;
+	if (!id) return fail(400, { error: 'Invalid request' });
+
+	const r = UpdateContactSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
+	await db.update(schema.contacts).set(r.data).where(eq(schema.contacts.id, id));
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'contact',
+		resource_id: id,
+		request
+	});
+	return { success: true };
+}
+
+export async function updateSchedule(ctx: ServiceCtx, id: string, data: unknown) {
+	const { db, env, user, request } = ctx;
+	if (!id) return fail(400, { error: 'Invalid request' });
+
+	const r = UpdateScheduleSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
+	await db.update(schema.customer_schedules).set(r.data).where(eq(schema.customer_schedules.id, id));
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'customer_schedule',
+		resource_id: id,
 		request
 	});
 	return { success: true };

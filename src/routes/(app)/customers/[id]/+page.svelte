@@ -7,11 +7,11 @@
 		CUSTOMER_STATUSES,
 		NOTE_COLORS
 	} from '$lib/types/customer';
-	import { ArrowLeft, Plus, Trash2, Mail } from '@lucide/svelte';
+	import { ArrowLeft, Plus, Trash2, Mail, Pencil } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { formatDateTime, formatDate } from '$lib/utils';
-	import { t } from '$lib/i18n';
+	import { formatDateTime, formatDateTimeJP } from '$lib/utils';
+	import { t, getLocale } from '$lib/i18n';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -24,23 +24,47 @@
 	let showAddSchedule = $state(false);
 	let showAddNote = $state(false);
 	let showAddContact = $state(false);
+	let showEditContact = $state(false);
+	let showEditSchedule = $state(false);
 	let showMessage = $state(false);
-	let confirmDeleteId = $state<string | null>(null);
-	let confirmDeleteType = $state<string>('');
 	let saving = $state(false);
 	let messageSending = $state(false);
 
-	function withInvalidate(action: string) {
+	type ContactRow = typeof data.customer.contacts[number];
+	type ScheduleRow = typeof data.customer.schedules[number];
+
+	let editingContact = $state<ContactRow | null>(null);
+	let editingSchedule = $state<ScheduleRow | null>(null);
+
+	// Schedule add-form state (for reset on cancel)
+	let schTitle = $state('');
+	let schStartAt = $state('');
+	let schEndAt = $state('');
+	let schNote = $state('');
+
+	// Delete confirmation
+	let showDeleteConfirm = $state(false);
+	let deletingId = $state<string | null>(null);
+	let deletingType = $state<'contact' | 'schedule' | 'activity' | null>(null);
+
+	const deleteMessage = $derived(
+		deletingType === 'contact' ? t().customer.deleteContactConfirm :
+		deletingType === 'schedule' ? t().customer.deleteScheduleConfirm :
+		t().customer.deleteActivityConfirm
+	);
+	const deleteTitle = $derived(
+		deletingType === 'contact' ? t().customer.deleteContact :
+		deletingType === 'schedule' ? t().customer.deleteSchedule :
+		t().customer.deleteActivity
+	);
+
+	function enh(close?: () => void) {
 		return () => {
 			saving = true;
 			return async ({ update }: { update: () => Promise<void> }) => {
 				await update();
 				await invalidateAll();
-				showEditCustomer = false;
-				showAddActivity = false;
-				showAddSchedule = false;
-				showAddNote = false;
-				showAddContact = false;
+				close?.();
 				saving = false;
 			};
 		};
@@ -56,6 +80,32 @@
 				if (result.type === 'success') showMessage = false;
 			};
 		};
+	}
+
+	function resetScheduleForm() {
+		schTitle = '';
+		schStartAt = '';
+		schEndAt = '';
+		schNote = '';
+	}
+
+	async function confirmDelete() {
+		if (!deletingId || !deletingType) return;
+		const fd = new FormData();
+		fd.set('id', deletingId);
+		const action =
+			deletingType === 'contact' ? '?/deleteContact' :
+			deletingType === 'schedule' ? '?/deleteSchedule' :
+			'?/deleteActivity';
+		await fetch(action, { method: 'POST', body: fd, headers: { accept: 'application/json' } });
+		await invalidateAll();
+		showDeleteConfirm = false;
+		deletingId = null;
+		deletingType = null;
+	}
+
+	function formatScheduleDate(str: string | null | undefined) {
+		return getLocale() === 'ja' ? formatDateTimeJP(str) : formatDateTime(str);
 	}
 
 	const noteColorStyle: Record<string, string> = {
@@ -146,18 +196,20 @@
 							<div class="activity-body">
 								<div class="activity-meta">
 									<span class="activity-by">{activity.account?.name ?? 'Unknown'}</span>
-									<span class="activity-time">{formatDateTime(activity.occurred_at)}</span>
+									<span class="activity-time">{formatScheduleDate(activity.occurred_at)}</span>
 								</div>
 								{#if activity.note}
 									<p class="activity-note">{activity.note}</p>
 								{/if}
 							</div>
-							<form method="POST" action="?/deleteActivity" use:enhance={withInvalidate('deleteActivity')}>
-								<input type="hidden" name="id" value={activity.id} />
-								<button type="submit" class="delete-btn" aria-label="Delete activity">
-									<Trash2 size={14} />
-								</button>
-							</form>
+							<button
+								type="button"
+								class="delete-btn"
+								aria-label="Delete activity"
+								onclick={() => { deletingId = activity.id; deletingType = 'activity'; showDeleteConfirm = true; }}
+							>
+								<Trash2 size={14} />
+							</button>
 						</div>
 					{/each}
 				</div>
@@ -180,18 +232,30 @@
 				<div class="schedule-list">
 					{#each data.customer.schedules as schedule (schedule.id)}
 						<div class="schedule-item">
-							<div class="schedule-date">{formatDate(schedule.start_at)}</div>
+							<div class="schedule-date">{formatScheduleDate(schedule.start_at)}</div>
 							<div class="schedule-body">
 								<div class="schedule-title">{schedule.title}</div>
 								{#if schedule.note}<p class="schedule-note">{schedule.note}</p>{/if}
 								<span class="schedule-by">{schedule.account?.name ?? ''}</span>
 							</div>
-							<form method="POST" action="?/deleteSchedule" use:enhance={withInvalidate('deleteSchedule')}>
-								<input type="hidden" name="id" value={schedule.id} />
-								<button type="submit" class="delete-btn" aria-label="Delete schedule">
+							<div class="item-actions">
+								<button
+									type="button"
+									class="icon-btn"
+									aria-label="Edit schedule"
+									onclick={() => { editingSchedule = schedule; showEditSchedule = true; }}
+								>
+									<Pencil size={13} />
+								</button>
+								<button
+									type="button"
+									class="delete-btn"
+									aria-label="Delete schedule"
+									onclick={() => { deletingId = schedule.id; deletingType = 'schedule'; showDeleteConfirm = true; }}
+								>
 									<Trash2 size={14} />
 								</button>
-							</form>
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -217,7 +281,7 @@
 							<p class="note-content">{note.content}</p>
 							<div class="note-footer">
 								<span>{note.account?.name ?? ''}</span>
-								<form method="POST" action="?/deleteNote" use:enhance={withInvalidate('deleteNote')}>
+								<form method="POST" action="?/deleteNote" use:enhance={enh()}>
 									<input type="hidden" name="id" value={note.id} />
 									<button type="submit" class="delete-btn" aria-label="Delete note">
 										<Trash2 size={12} />
@@ -258,12 +322,24 @@
 									{#if contact.tel}<span>{contact.tel}</span>{/if}
 								</div>
 							</div>
-							<form method="POST" action="?/deleteContact" use:enhance={withInvalidate('deleteContact')}>
-								<input type="hidden" name="id" value={contact.id} />
-								<button type="submit" class="delete-btn" aria-label="Delete contact">
+							<div class="item-actions">
+								<button
+									type="button"
+									class="icon-btn"
+									aria-label="Edit contact"
+									onclick={() => { editingContact = contact; showEditContact = true; }}
+								>
+									<Pencil size={13} />
+								</button>
+								<button
+									type="button"
+									class="delete-btn"
+									aria-label="Delete contact"
+									onclick={() => { deletingId = contact.id; deletingType = 'contact'; showDeleteConfirm = true; }}
+								>
 									<Trash2 size={14} />
 								</button>
-							</form>
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -276,7 +352,7 @@
 
 <!-- Edit Customer Modal -->
 <Modal open={showEditCustomer} title={t().customer.edit} onclose={() => (showEditCustomer = false)}>
-	<form method="POST" action="?/updateCustomer" use:enhance={withInvalidate('updateCustomer')}>
+	<form method="POST" action="?/updateCustomer" use:enhance={enh(() => (showEditCustomer = false))}>
 		<div class="form-grid">
 			<div class="field full">
 				<Label for="edit-name" required>{t().customer.name}</Label>
@@ -320,7 +396,7 @@
 
 <!-- Add Activity Modal -->
 <Modal open={showAddActivity} title={t().customer.addActivity} onclose={() => (showAddActivity = false)}>
-	<form method="POST" action="?/createActivity" use:enhance={withInvalidate('createActivity')}>
+	<form method="POST" action="?/createActivity" use:enhance={enh(() => (showAddActivity = false))}>
 		<div class="form-fields">
 			<div class="field">
 				<Label for="act-type" required>{t().customer.activities}</Label>
@@ -331,7 +407,7 @@
 				</select>
 			</div>
 			<div class="field">
-				<Label for="act-note">{t().customer.notes}</Label>
+				<Label for="act-note">{t().customer.activityMemo}</Label>
 				<Textarea id="act-note" name="note" rows={3} />
 			</div>
 		</div>
@@ -343,39 +419,70 @@
 </Modal>
 
 <!-- Add Schedule Modal -->
-<Modal open={showAddSchedule} title={t().customer.addSchedule} onclose={() => (showAddSchedule = false)}>
-	<form method="POST" action="?/createSchedule" use:enhance={withInvalidate('createSchedule')}>
+<Modal open={showAddSchedule} title={t().customer.addSchedule} onclose={() => { resetScheduleForm(); showAddSchedule = false; }}>
+	<form method="POST" action="?/createSchedule" use:enhance={enh(() => { resetScheduleForm(); showAddSchedule = false; })}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="sch-title" required>{t().common.details}</Label>
-				<Input id="sch-title" name="title" required />
+				<Label for="sch-title" required>{t().customer.scheduleTitle}</Label>
+				<Input id="sch-title" name="title" bind:value={schTitle} required />
 			</div>
 			<div class="field">
 				<Label for="sch-start" required>{t().project.startDate}</Label>
-				<Input id="sch-start" name="start_at" type="datetime-local" required />
+				<Input id="sch-start" name="start_at" type="datetime-local" bind:value={schStartAt} required />
 			</div>
 			<div class="field">
 				<Label for="sch-end">{t().project.endDate}</Label>
-				<Input id="sch-end" name="end_at" type="datetime-local" />
+				<Input id="sch-end" name="end_at" type="datetime-local" bind:value={schEndAt} />
 			</div>
 			<div class="field">
-				<Label for="sch-note">{t().customer.notes}</Label>
-				<Textarea id="sch-note" name="note" rows={2} />
+				<Label for="sch-note">{t().customer.scheduleContent}</Label>
+				<Textarea id="sch-note" name="note" rows={2} bind:value={schNote} />
 			</div>
 		</div>
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (showAddSchedule = false)}>{t().common.cancel}</Button>
+			<Button type="button" variant="secondary" onclick={() => { resetScheduleForm(); showAddSchedule = false; }}>{t().common.cancel}</Button>
 			<Button type="submit" variant="primary" disabled={saving}>{t().common.add}</Button>
 		</div>
 	</form>
 </Modal>
 
+<!-- Edit Schedule Modal -->
+{#if editingSchedule}
+	<Modal open={showEditSchedule} title={t().customer.editSchedule} onclose={() => (showEditSchedule = false)}>
+		<form method="POST" action="?/updateSchedule" use:enhance={enh(() => (showEditSchedule = false))}>
+			<input type="hidden" name="id" value={editingSchedule.id} />
+			<div class="form-fields">
+				<div class="field">
+					<Label for="esch-title" required>{t().customer.scheduleTitle}</Label>
+					<Input id="esch-title" name="title" value={editingSchedule.title} required />
+				</div>
+				<div class="field">
+					<Label for="esch-start" required>{t().project.startDate}</Label>
+					<Input id="esch-start" name="start_at" type="datetime-local" value={editingSchedule.start_at?.slice(0, 16) ?? ''} required />
+				</div>
+				<div class="field">
+					<Label for="esch-end">{t().project.endDate}</Label>
+					<Input id="esch-end" name="end_at" type="datetime-local" value={editingSchedule.end_at?.slice(0, 16) ?? ''} />
+				</div>
+				<div class="field">
+					<Label for="esch-note">{t().customer.scheduleContent}</Label>
+					<Textarea id="esch-note" name="note" rows={2} value={editingSchedule.note ?? ''} />
+				</div>
+			</div>
+			<div class="form-actions">
+				<Button type="button" variant="secondary" onclick={() => (showEditSchedule = false)}>{t().common.cancel}</Button>
+				<Button type="submit" variant="primary" disabled={saving}>{t().common.save}</Button>
+			</div>
+		</form>
+	</Modal>
+{/if}
+
 <!-- Add Note Modal -->
 <Modal open={showAddNote} title={t().customer.addNote} onclose={() => (showAddNote = false)}>
-	<form method="POST" action="?/createNote" use:enhance={withInvalidate('createNote')}>
+	<form method="POST" action="?/createNote" use:enhance={enh(() => (showAddNote = false))}>
 		<div class="form-fields">
 			<div class="field">
-				<Label for="note-content" required>{t().common.details}</Label>
+				<Label for="note-content" required>{t().customer.scheduleContent}</Label>
 				<Textarea id="note-content" name="content" rows={4} required />
 			</div>
 			<div class="field">
@@ -399,18 +506,18 @@
 
 <!-- Add Contact Modal -->
 <Modal open={showAddContact} title={t().customer.addContact} onclose={() => (showAddContact = false)}>
-	<form method="POST" action="?/createContact" use:enhance={withInvalidate('createContact')}>
+	<form method="POST" action="?/createContact" use:enhance={enh(() => (showAddContact = false))}>
 		<div class="form-grid">
 			<div class="field full">
 				<Label for="con-name" required>{t().account.name}</Label>
 				<Input id="con-name" name="name" required />
 			</div>
 			<div class="field">
-				<Label for="con-dept">{t().common.details}</Label>
+				<Label for="con-dept">{t().customer.department}</Label>
 				<Input id="con-dept" name="department" />
 			</div>
 			<div class="field">
-				<Label for="con-pos">{t().common.details}</Label>
+				<Label for="con-pos">{t().customer.position}</Label>
 				<Input id="con-pos" name="position" />
 			</div>
 			<div class="field">
@@ -422,7 +529,7 @@
 				<Input id="con-tel" name="tel" />
 			</div>
 			<div class="field full">
-				<Label for="con-note">{t().customer.notes}</Label>
+				<Label for="con-note">{t().customer.remarks}</Label>
 				<Textarea id="con-note" name="note" rows={2} />
 			</div>
 		</div>
@@ -432,6 +539,45 @@
 		</div>
 	</form>
 </Modal>
+
+<!-- Edit Contact Modal -->
+{#if editingContact}
+	<Modal open={showEditContact} title={t().customer.editContact} onclose={() => (showEditContact = false)}>
+		<form method="POST" action="?/updateContact" use:enhance={enh(() => (showEditContact = false))}>
+			<input type="hidden" name="id" value={editingContact.id} />
+			<div class="form-grid">
+				<div class="field full">
+					<Label for="econ-name" required>{t().account.name}</Label>
+					<Input id="econ-name" name="name" value={editingContact.name} required />
+				</div>
+				<div class="field">
+					<Label for="econ-dept">{t().customer.department}</Label>
+					<Input id="econ-dept" name="department" value={editingContact.department ?? ''} />
+				</div>
+				<div class="field">
+					<Label for="econ-pos">{t().customer.position}</Label>
+					<Input id="econ-pos" name="position" value={editingContact.position ?? ''} />
+				</div>
+				<div class="field">
+					<Label for="econ-email">{t().customer.email}</Label>
+					<Input id="econ-email" name="email" type="email" value={editingContact.email ?? ''} />
+				</div>
+				<div class="field">
+					<Label for="econ-tel">{t().customer.tel}</Label>
+					<Input id="econ-tel" name="tel" value={editingContact.tel ?? ''} />
+				</div>
+				<div class="field full">
+					<Label for="econ-note">{t().customer.remarks}</Label>
+					<Textarea id="econ-note" name="note" rows={2} value={editingContact.note ?? ''} />
+				</div>
+			</div>
+			<div class="form-actions">
+				<Button type="button" variant="secondary" onclick={() => (showEditContact = false)}>{t().common.cancel}</Button>
+				<Button type="submit" variant="primary" disabled={saving}>{t().common.save}</Button>
+			</div>
+		</form>
+	</Modal>
+{/if}
 
 <!-- Send Message Modal -->
 <Modal open={showMessage} title={t().customer.messageDialog} onclose={() => (showMessage = false)}>
@@ -458,6 +604,16 @@
 		</div>
 	</form>
 </Modal>
+
+<!-- Delete Confirmation Dialog -->
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title={deleteTitle}
+	message={deleteMessage}
+	confirmLabel={t().common.delete}
+	onconfirm={confirmDelete}
+	oncancel={() => { showDeleteConfirm = false; deletingId = null; deletingType = null; }}
+/>
 
 <style lang="scss">
 	.page {
@@ -665,7 +821,7 @@
 		color: var(--color-primary);
 		white-space: nowrap;
 		flex-shrink: 0;
-		min-width: 100px;
+		min-width: 120px;
 	}
 
 	.schedule-title,
@@ -677,6 +833,13 @@
 	.contact-role {
 		font-size: 0.75rem;
 		color: var(--color-text-secondary);
+	}
+
+	.item-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		flex-shrink: 0;
 	}
 
 	.notes-grid {
@@ -704,6 +867,25 @@
 		justify-content: space-between;
 		font-size: 0.75rem;
 		color: rgba(0, 0, 0, 0.5);
+	}
+
+	.icon-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border: none;
+		background: none;
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-sm);
+		flex-shrink: 0;
+
+		&:hover {
+			background-color: var(--color-bg-sunken);
+			color: var(--color-text);
+		}
 	}
 
 	.delete-btn {

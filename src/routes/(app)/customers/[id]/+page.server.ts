@@ -7,10 +7,12 @@ import {
 	createActivity,
 	deleteActivity,
 	createSchedule,
+	updateSchedule,
 	deleteSchedule,
 	createNote,
 	deleteNote,
 	createContact,
+	updateContact,
 	deleteContact
 } from '$lib/services/customer';
 import { sendCustomerMessage } from '$lib/services/email';
@@ -88,9 +90,31 @@ export const actions = {
 		});
 	},
 
+	updateContact: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		return updateContact(makeCtx(platform!, locals, request), f.get('id')?.toString() ?? '', {
+			name: f.get('name')?.toString().trim() ?? '',
+			email: f.get('email')?.toString().trim() || null,
+			tel: f.get('tel')?.toString().trim() || null,
+			department: f.get('department')?.toString().trim() || null,
+			position: f.get('position')?.toString().trim() || null,
+			note: f.get('note')?.toString().trim() || null
+		});
+	},
+
 	deleteContact: async ({ request, platform, locals }) => {
 		const f = await request.formData();
 		return deleteContact(makeCtx(platform!, locals, request), f.get('id')?.toString() ?? '');
+	},
+
+	updateSchedule: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		return updateSchedule(makeCtx(platform!, locals, request), f.get('id')?.toString() ?? '', {
+			title: f.get('title')?.toString().trim() ?? '',
+			start_at: f.get('start_at')?.toString() ?? '',
+			end_at: f.get('end_at')?.toString() || null,
+			note: f.get('note')?.toString().trim() || null
+		});
 	},
 
 	sendMessage: async ({ request, platform, params, locals }) => {
