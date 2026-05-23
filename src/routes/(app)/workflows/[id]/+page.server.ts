@@ -2,6 +2,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { makeCtx } from '$lib/services';
 import {
 	getWorkflow,
+	updateWorkflow,
 	addApprover,
 	removeApprover,
 	addComment,
@@ -17,6 +18,15 @@ export const load: PageServerLoad = async ({ platform, params, locals }) => {
 };
 
 export const actions = {
+	update: async ({ request, platform, params, locals }) => {
+		const f = await request.formData();
+		return updateWorkflow(makeCtx(platform!, locals, request), params.id, {
+			title: f.get('title')?.toString().trim() ?? '',
+			description: f.get('description')?.toString().trim() || undefined,
+			priority: f.get('priority')?.toString() || undefined
+		});
+	},
+
 	addApprover: async ({ request, platform, params, locals }) => {
 		const f = await request.formData();
 		return addApprover(makeCtx(platform!, locals), params.id, f.get('approver_id')?.toString() ?? '');

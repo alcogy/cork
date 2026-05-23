@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Button, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
+	import { Button, Input, Textarea, FileUploadDialog, ConfirmDialog } from '$lib/ui';
 	import { ArrowLeft, CheckCircle, XCircle, UserPlus, Trash2, Clock, Check, X, Paperclip } from '@lucide/svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { formatDateJP, formatDateTimeJP } from '$lib/utils';
+	import { WORKFLOW_PRIORITIES } from '$lib/types/workflow';
 	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
@@ -95,7 +96,31 @@
 	<div class="content-grid">
 		<!-- Left: Details + Approvers + Actions + Comments -->
 		<div class="main-col">
-			{#if wf.description}
+			{#if wf.status === 'draft' && (data.isRequester || data.isAdmin)}
+				<div class="section draft-edit-section">
+					<form method="POST" action="?/update" use:enhance={enh()} class="draft-edit-form">
+						<div class="draft-field">
+							<label class="draft-label" for="wf-title">{t().workflow.requestTitle} *</label>
+							<Input id="wf-title" name="title" value={wf.title} required />
+						</div>
+						<div class="draft-field">
+							<label class="draft-label" for="wf-priority">{t().workflow.priority}</label>
+							<select id="wf-priority" name="priority" class="draft-select">
+								{#each WORKFLOW_PRIORITIES as p (p)}
+									<option value={p} selected={wf.priority === p}>{t().workflow.priorities[p]}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="draft-field">
+							<label class="draft-label" for="wf-desc">{t().workflow.description}</label>
+							<Textarea id="wf-desc" name="description" rows={4} value={wf.description ?? ''} />
+						</div>
+						<div class="draft-save-row">
+							<Button type="submit" variant="secondary" size="sm" disabled={saving}>{t().common.save}</Button>
+						</div>
+					</form>
+				</div>
+			{:else if wf.description}
 				<div class="section">
 					<h3>{t().workflow.description}</h3>
 					<p class="description">{wf.description}</p>
@@ -394,6 +419,28 @@
 	.section-hint { font-size: 0.8125rem; color: var(--color-text-secondary); margin-top: -var(--space-sm); }
 	.files-header { display: flex; }
 	.description { font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; }
+
+	.draft-edit-section {
+		padding: var(--space-lg);
+		background-color: var(--color-bg-elevated);
+		border: 1px solid var(--color-border-light);
+		border-radius: var(--radius-lg);
+	}
+
+	.draft-edit-form { display: flex; flex-direction: column; gap: var(--space-lg); }
+	.draft-field { display: flex; flex-direction: column; gap: var(--space-xs); }
+	.draft-label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
+	.draft-select {
+		height: 36px;
+		padding: 0 var(--space-md);
+		border: 1px solid var(--color-input-border);
+		border-radius: var(--radius-md);
+		background-color: var(--color-input-bg);
+		color: var(--color-text);
+		font-size: 0.875rem;
+		width: 100%;
+	}
+	.draft-save-row { display: flex; justify-content: flex-end; }
 
 	/* Approver setup */
 	.approver-setup {

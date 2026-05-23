@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, asc, count, desc, eq, max } from 'drizzle-orm';
+import { and, asc, count, desc, eq, max, ne } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
@@ -90,6 +90,7 @@ export async function getWorkflow(ctx: ServiceCtx, id: string) {
 		db
 			.select({ id: schema.accounts.id, name: schema.accounts.name })
 			.from(schema.accounts)
+			.where(ne(schema.accounts.id, user.id))
 			.orderBy(asc(schema.accounts.name)),
 		db.select().from(schema.workflow_files).where(eq(schema.workflow_files.workflow_id, id))
 	]);
@@ -125,6 +126,39 @@ export async function createWorkflow(ctx: ServiceCtx, data: unknown) {
 		request
 	});
 	return { success: true, id: workflow.id };
+}
+
+const UpdateWorkflowSchema = z.object({
+	title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+	description: z.string().max(5000, 'Description too long').optional(),
+	priority: PrioritySchema.optional()
+});
+
+export async function updateWorkflow(ctx: ServiceCtx, workflowId: string, data: unknown) {
+	const { db, env, user, request } = ctx;
+
+	const wf = await db.query.workflows.findFirst({ where: eq(schema.workflows.id, workflowId) });
+	if (!wf) return fail(404, { error: 'Not found' });
+	if (wf.status !== 'draft') return fail(400, { error: 'Only draft requests can be edited' });
+
+	const r = UpdateWorkflowSchema.safeParse(data);
+	if (!r.success) return fail(400, { error: r.error.issues[0].message });
+
+	const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+	await db
+		.update(schema.workflows)
+		.set({ title: r.data.title, description: r.data.description ?? null, priority: r.data.priority ?? 'normal', updated_at: now })
+		.where(eq(schema.workflows.id, workflowId));
+
+	await writeAuditLog({
+		db: env.DB,
+		account_id: user.id,
+		action: 'update',
+		resource_type: 'workflow',
+		resource_id: workflowId,
+		request
+	});
+	return { success: true };
 }
 
 export async function addApprover(ctx: ServiceCtx, workflowId: string, approverId: string) {
