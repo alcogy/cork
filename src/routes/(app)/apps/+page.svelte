@@ -60,9 +60,11 @@
 				<Bookmark size={14} />
 				{bookmarkFilter ? t().apps.title : t().common.filter}
 			</Button>
-			<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
-				<Plus size={14} /> {t().apps.new}
-			</Button>
+			{#if isAdmin}
+				<Button variant="primary" size="sm" onclick={() => (showEditor = true)}>
+					<Plus size={14} /> {t().apps.new}
+				</Button>
+			{/if}
 		</div>
 	</div>
 
@@ -101,9 +103,11 @@
 						<span>{app.record_count} record{app.record_count !== 1 ? 's' : ''}</span>
 					</div>
 					<div class="app-actions">
-						<a href="/apps/{app.id}" class="btn-link">
-							<Button variant="secondary" size="sm">{t().apps.records}</Button>
-						</a>
+						{#if app.field_count > 0}
+							<a href="/apps/{app.id}" class="btn-link">
+								<Button variant="secondary" size="sm">{t().apps.records}</Button>
+							</a>
+						{/if}
 						{#if isAdmin}
 							<a href="/apps/{app.id}/build" class="btn-link">
 								<Button variant="ghost" size="sm"><Wrench size={14} /> {t().apps.build}</Button>

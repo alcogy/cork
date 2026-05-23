@@ -1,9 +1,12 @@
+import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { makeCtx } from '$lib/services';
 import { getApp, createRecord, deleteRecord, togglePublish } from '$lib/services/apps';
 
 export const load: PageServerLoad = async ({ platform, params, locals }) => {
-	return getApp(makeCtx(platform!, locals), params.id);
+	const result = await getApp(makeCtx(platform!, locals), params.id);
+	if (result.app.fieldsParsed.length === 0 && locals.user?.role !== 'admin') throw redirect(303, '/apps');
+	return result;
 };
 
 export const actions = {
