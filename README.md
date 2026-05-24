@@ -96,6 +96,36 @@ bun run db:seed            # Seed local DB
 bun run db:studio          # Drizzle Studio (needs remote credentials)
 ```
 
+### Local secrets (.dev.vars)
+
+Wrangler automatically loads `.dev.vars` when running `bun dev`. This file holds secrets for local development and is **never committed to git**.
+
+Copy the example file and fill in your values:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `EMAIL_PROVIDER` | No | Email backend: `resend` (default) \| `ses` \| `smtp` |
+| `EMAIL_FROM` | No | Sender address shown on outgoing emails |
+| `ALERT_EMAIL_TO` | No | Admin alert recipient for login failures etc. |
+| `RESEND_API_KEY` | If using Resend | API key from [resend.com](https://resend.com) |
+| `AWS_ACCESS_KEY_ID` | If using SES | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | If using SES | AWS secret key |
+| `AWS_REGION` | If using SES | AWS region (e.g. `ap-northeast-1`) |
+| `SMTP_API_URL` | If using SMTP | HTTP relay endpoint (MailChannels, Brevo, etc.) |
+| `SMTP_API_KEY` | If using SMTP | HTTP relay API key |
+
+> Email sending is **optional for local development**. Leave `EMAIL_FROM` empty to disable all outgoing email.
+
+For production, set secrets via Wrangler instead of `.dev.vars`:
+
+```bash
+wrangler secret put RESEND_API_KEY
+```
+
 ---
 
 ## License
