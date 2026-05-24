@@ -124,6 +124,7 @@ export async function createWorkflow(ctx: ServiceCtx, data: unknown) {
 		action: 'create',
 		resource_type: 'workflow',
 		resource_id: workflow.id,
+		metadata: { title: r.data.title },
 		request
 	});
 	return { success: true, id: workflow.id };
@@ -277,7 +278,8 @@ export async function submitWorkflow(
 		account_id: user.id,
 		action: 'update',
 		resource_type: 'workflow',
-		resource_id: workflowId
+		resource_id: workflowId,
+		metadata: { title: workflowTitle }
 	});
 
 	// Fire-and-forget: notify all approvers
@@ -357,7 +359,8 @@ export async function approveWorkflow(
 		account_id: user.id,
 		action: 'update',
 		resource_type: 'workflow',
-		resource_id: workflowId
+		resource_id: workflowId,
+		metadata: comment ? { comment } : undefined
 	});
 	return { success: true };
 }
@@ -412,7 +415,8 @@ export async function rejectWorkflow(
 		account_id: user.id,
 		action: 'update',
 		resource_type: 'workflow',
-		resource_id: workflowId
+		resource_id: workflowId,
+		metadata: comment ? { comment } : undefined
 	});
 	return { success: true };
 }

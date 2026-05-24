@@ -149,6 +149,7 @@ export async function createProject(ctx: ServiceCtx, data: unknown) {
 		action: 'create',
 		resource_type: 'project',
 		resource_id: project.id,
+		metadata: { name: r.data.title },
 		request
 	});
 	return { success: true };
@@ -171,6 +172,7 @@ export async function updateProject(ctx: ServiceCtx, id: string, data: unknown) 
 		action: 'update',
 		resource_type: 'project',
 		resource_id: id,
+		metadata: { name: r.data.title },
 		request
 	});
 	return { success: true };
@@ -276,7 +278,8 @@ export async function saveWbs(
 		account_id: user.id,
 		action: 'update',
 		resource_type: 'wbs',
-		resource_id: wbsId
+		resource_id: wbsId,
+		metadata: { task_count: tasks.length }
 	});
 	return { success: true };
 }

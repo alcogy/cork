@@ -160,6 +160,7 @@ export async function createCustomer(ctx: ServiceCtx, data: unknown) {
 		action: 'create',
 		resource_type: 'customer',
 		resource_id: customer.id,
+		metadata: { name: r.data.name },
 		request
 	});
 
@@ -184,6 +185,7 @@ export async function updateCustomer(ctx: ServiceCtx, id: string, data: unknown)
 		action: 'update',
 		resource_type: 'customer',
 		resource_id: id,
+		metadata: { name: r.data.name },
 		request
 	});
 

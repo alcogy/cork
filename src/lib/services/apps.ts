@@ -112,6 +112,7 @@ export async function createApp(ctx: ServiceCtx, data: unknown) {
 		action: 'create',
 		resource_type: 'app',
 		resource_id: app.id,
+		metadata: { name: r.data.name },
 		request
 	});
 	return { success: true, id: app.id };
@@ -162,6 +163,7 @@ export async function createRecord(ctx: ServiceCtx, appId: string, formData: For
 		action: 'create',
 		resource_type: 'app_record',
 		resource_id: record.id,
+		metadata: { app_name: app.name },
 		request
 	});
 	return { success: true };
@@ -231,6 +233,13 @@ export async function updateRecord(
 export async function deleteRecord(ctx: ServiceCtx, recordId: string) {
 	const { db, env, user, request } = ctx;
 	if (!recordId) return fail(400, { error: 'Invalid request' });
+
+	const [recordInfo] = await db
+		.select({ app_name: schema.apps.name })
+		.from(schema.app_records)
+		.innerJoin(schema.apps, eq(schema.app_records.app_id, schema.apps.id))
+		.where(eq(schema.app_records.id, recordId));
+
 	await db.delete(schema.app_records).where(eq(schema.app_records.id, recordId));
 	await writeAuditLog({
 		db: env.DB,
@@ -238,6 +247,7 @@ export async function deleteRecord(ctx: ServiceCtx, recordId: string) {
 		action: 'delete',
 		resource_type: 'app_record',
 		resource_id: recordId,
+		metadata: recordInfo ? { app_name: recordInfo.app_name } : undefined,
 		request
 	});
 	return { success: true };

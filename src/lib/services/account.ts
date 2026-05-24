@@ -61,6 +61,7 @@ export async function createAccount(ctx: ServiceCtx, data: unknown) {
 			action: 'create',
 			resource_type: 'account',
 			resource_id: account.id,
+			metadata: { email: r.data.email, name: r.data.name, role: r.data.role },
 			request
 		});
 
@@ -106,6 +107,7 @@ export async function updateAccount(ctx: ServiceCtx, id: string, data: unknown) 
 		action: 'update',
 		resource_type: 'account',
 		resource_id: id,
+		metadata: { email: r.data.email, name: r.data.name, role: r.data.role },
 		request
 	});
 
