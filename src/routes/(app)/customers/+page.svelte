@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button, Table, SearchBar, Pagination, Modal, Input, Label } from '$lib/ui';
 	import { CUSTOMER_STATUS_LABELS, CUSTOMER_STATUSES } from '$lib/types/customer';
-	import { Plus, Download } from '@lucide/svelte';
+	import { Plus, Download, Upload } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { t } from '$lib/i18n';
@@ -15,6 +15,25 @@
 	let showEditor = $state(false);
 	let editingCustomer = $state<(typeof data.customers)[0] | null>(null);
 	let saving = $state(false);
+
+	type ImportResult = {
+		success: true;
+		imported: number;
+		skipped: number;
+		errors: { row: number; message: string }[];
+	};
+
+	let showImport = $state(false);
+	let importState = $state<'idle' | 'importing' | 'done'>('idle');
+	let importResult = $state<ImportResult | null>(null);
+	let importError = $state<string | null>(null);
+
+	function closeImport() {
+		showImport = false;
+		importState = 'idle';
+		importResult = null;
+		importError = null;
+	}
 
 	const columns = $derived([
 		{ key: 'name', label: t().customer.name },
@@ -69,6 +88,7 @@
 			<a href={getExportUrl()} class="btn-link">
 				<Button variant="secondary" size="sm"><Download size={14} /> {t().customer.exportCsv}</Button>
 			</a>
+			<Button variant="secondary" size="sm" onclick={() => (showImport = true)}><Upload size={14} /> {t().customer.importCsv}</Button>
 			<Button variant="primary" size="sm" onclick={openCreate}><Plus size={14} /> {t().customer.new}</Button>
 		</div>
 	</div>
@@ -120,6 +140,89 @@
 
 	<p class="total-count">{t().common.total}: {data.total}</p>
 </div>
+
+<!-- Import CSV Modal -->
+<Modal open={showImport} title={t().customer.importCsv} onclose={closeImport}>
+	{#if importState === 'done' && importResult}
+		<div class="import-result">
+			<p class="import-summary">
+				{t().customer.importResult
+					.replace('{imported}', String(importResult.imported))
+					.replace('{skipped}', String(importResult.skipped))}
+			</p>
+			{#if importResult.errors.length > 0}
+				<div class="import-errors">
+					<p class="import-errors-title">{t().customer.importErrors}</p>
+					<ul class="import-error-list">
+						{#each importResult.errors as err}
+							<li>Row {err.row}: {err.message}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+		</div>
+		<div class="form-actions">
+			<Button variant="primary" onclick={closeImport}>{t().common.close}</Button>
+		</div>
+	{:else}
+		<form
+			method="POST"
+			action="?/import"
+			enctype="multipart/form-data"
+			use:enhance={() => {
+				importState = 'importing';
+				importResult = null;
+				importError = null;
+				return async ({ result }) => {
+					if (result.type === 'success') {
+						importResult = result.data as ImportResult;
+						importState = 'done';
+						await invalidateAll();
+					} else if (result.type === 'failure') {
+						importError = (result.data?.error as string) ?? 'Import failed';
+						importState = 'idle';
+					} else {
+						importState = 'idle';
+					}
+				};
+			}}
+		>
+			<div class="form-grid">
+				<div class="field full">
+					<Label for="import-file" required>CSV</Label>
+					<input
+						id="import-file"
+						type="file"
+						name="file"
+						accept=".csv,text/csv"
+						required
+						class="file-input"
+					/>
+				</div>
+				<div class="field full">
+					<Label>{t().customer.importMode}</Label>
+					<div class="radio-group">
+						<label class="radio-option">
+							<input type="radio" name="mode" value="append" checked /> {t().customer.importModeAppend}
+						</label>
+						<label class="radio-option">
+							<input type="radio" name="mode" value="replace" /> {t().customer.importModeReplace}
+						</label>
+					</div>
+				</div>
+			</div>
+			{#if importError}
+				<p class="error-msg">{importError}</p>
+			{/if}
+			<div class="form-actions">
+				<Button type="button" variant="secondary" onclick={closeImport}>{t().common.cancel}</Button>
+				<Button type="submit" variant="primary" disabled={importState === 'importing'}>
+					{importState === 'importing' ? t().common.loading : t().common.import}
+				</Button>
+			</div>
+		</form>
+	{/if}
+</Modal>
 
 <!-- Customer Editor Modal -->
 <Modal
@@ -317,5 +420,65 @@
 		gap: var(--space-sm);
 		padding-top: var(--space-lg);
 		border-top: 1px solid var(--color-border-light);
+	}
+
+	.file-input {
+		font-size: 0.875rem;
+		color: var(--color-text);
+		cursor: pointer;
+	}
+
+	.radio-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
+	.radio-option {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		font-size: 0.875rem;
+		cursor: pointer;
+	}
+
+	.import-result {
+		padding-bottom: var(--space-lg);
+	}
+
+	.import-summary {
+		font-size: 0.9375rem;
+		font-weight: 500;
+		margin-bottom: var(--space-md);
+	}
+
+	.import-errors {
+		background-color: var(--color-bg-sunken);
+		border-radius: var(--radius-md);
+		padding: var(--space-md);
+	}
+
+	.import-errors-title {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--color-warning);
+		margin-bottom: var(--space-sm);
+	}
+
+	.import-error-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+	}
+
+	.error-msg {
+		color: var(--color-danger);
+		font-size: 0.875rem;
+		margin-bottom: var(--space-md);
 	}
 </style>

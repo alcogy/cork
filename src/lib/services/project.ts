@@ -3,6 +3,7 @@ import { error, fail } from '@sveltejs/kit';
 import { asc, count, desc, eq, like } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
+import { WBS_MAX_TASKS } from '$lib/utils/constants';
 import type { ServiceCtx } from './index';
 
 const PER_PAGE = 30;
@@ -257,6 +258,9 @@ export async function saveWbs(
 	tasks: { id: string; name: string; assignee: string; plannedStart: string; plannedEnd: string }[]
 ) {
 	const { db, env, user } = ctx;
+	if (tasks.length > WBS_MAX_TASKS) {
+		return fail(400, { error: `Cannot save more than ${WBS_MAX_TASKS} tasks` });
+	}
 	await db.delete(schema.wbs_tasks).where(eq(schema.wbs_tasks.wbs_id, wbsId));
 
 	if (tasks.length > 0) {

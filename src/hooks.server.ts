@@ -52,20 +52,5 @@ export const handle: Handle = async ({ event, resolve }) => {
 		'Permissions-Policy',
 		'camera=(), microphone=(), geolocation=(), interest-cohort=()'
 	);
-	response.headers.set(
-		'Content-Security-Policy',
-		[
-			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline'", // SvelteKit SSR hydration requires unsafe-inline
-			"style-src 'self' 'unsafe-inline'",
-			"img-src 'self' data: blob:",
-			"font-src 'self'",
-			"connect-src 'self'",
-			"frame-ancestors 'none'",
-			"base-uri 'self'",
-			"form-action 'self'"
-		].join('; ')
-	);
-
 	return response;
 };

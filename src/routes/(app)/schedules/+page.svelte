@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { CalendarDays, Clock, User } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
-	import { formatDate, formatDateTime } from '$lib/utils';
+	import { formatDateTime, formatDate } from '$lib/utils';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -15,18 +16,18 @@
 </script>
 
 <svelte:head>
-	<title>Schedules — Cork</title>
+	<title>{t().nav.schedules} — Cork</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">Schedules</h1>
+		<h1 class="page-title">{t().nav.schedules}</h1>
 		<div class="view-tabs">
 			<button class="view-tab {view === 'upcoming' ? 'active' : ''}" onclick={() => navigate('upcoming')}>
-				Upcoming
+				{t().dashboard.upcoming}
 			</button>
 			<button class="view-tab {view === 'past' ? 'active' : ''}" onclick={() => navigate('past')}>
-				Past
+				{t().dashboard.past}
 			</button>
 		</div>
 	</div>
@@ -60,8 +61,8 @@
 		{:else}
 			<div class="empty-state">
 				<CalendarDays size={40} />
-				<p>No upcoming schedules.</p>
-				<p class="empty-hint">Add schedules from a customer's detail page.</p>
+				<p>{t().dashboard.noUpcomingSchedules}</p>
+				<p class="empty-hint">{t().dashboard.schedulesAddHint}</p>
 			</div>
 		{/if}
 	{:else}
@@ -85,7 +86,7 @@
 			</div>
 		{:else}
 			<div class="empty-state">
-				<p>No past schedules.</p>
+				<p>{t().dashboard.noPastSchedules}</p>
 			</div>
 		{/if}
 	{/if}

@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { drizzle } from 'drizzle-orm/d1';
-import { asc, desc, eq, gte } from 'drizzle-orm';
+import { asc, desc, gte, lt } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ platform, locals, url }) => {
@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ platform, locals, url }) => {
 		}),
 		view === 'past'
 			? db.query.customer_schedules.findMany({
+					where: lt(schema.customer_schedules.start_at, now),
 					orderBy: [desc(schema.customer_schedules.start_at)],
 					limit: 50,
 					with: { customer: true, account: true }

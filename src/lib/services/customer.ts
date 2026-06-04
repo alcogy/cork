@@ -4,6 +4,7 @@ import { and, count, desc, eq, like, or, sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { writeAuditLog } from '$lib/server/audit';
 import { csvToObjects } from '$lib/utils/csv';
+import { CUSTOMER_IMPORT_MAX_ROWS } from '$lib/utils/constants';
 import type { CUSTOMER_STATUSES } from '$lib/types/customer';
 import type { ServiceCtx } from './index';
 
@@ -208,6 +209,8 @@ export async function deleteCustomer(ctx: ServiceCtx, id: string) {
 	return { success: true };
 }
 
+const ImportRowSchema = CreateCustomerSchema.omit({ status: true });
+
 export async function importCustomers(ctx: ServiceCtx, file: File, mode: 'append' | 'replace') {
 	const { db, env, user, request } = ctx;
 	if (!file || file.size === 0) return fail(400, { error: 'No file uploaded' });
@@ -215,33 +218,56 @@ export async function importCustomers(ctx: ServiceCtx, file: File, mode: 'append
 
 	const rows = csvToObjects(await file.text());
 	if (rows.length === 0) return fail(400, { error: 'CSV file is empty or invalid' });
+	if (rows.length > CUSTOMER_IMPORT_MAX_ROWS) {
+		return fail(400, { error: `CSV exceeds the ${CUSTOMER_IMPORT_MAX_ROWS}-row limit` });
+	}
+
+	const valid: Array<z.infer<typeof ImportRowSchema> & { status: 'active' }> = [];
+	const errors: { row: number; message: string }[] = [];
+
+	for (let i = 0; i < rows.length; i++) {
+		const row = rows[i];
+		const raw = {
+			name: (row['name'] || row['Company name'] || '').trim(),
+			email: (row['email'] || row['Email'] || '').trim() || null,
+			tel: (row['tel'] || row['Phone'] || '').trim() || null,
+			fax: (row['fax'] || row['Fax'] || '').trim() || null,
+			zipcode: (row['zipcode'] || row['Zip'] || '').trim() || null,
+			address: (row['address'] || row['Address'] || '').trim() || null
+		};
+		const r = ImportRowSchema.safeParse(raw);
+		if (!r.success) {
+			errors.push({ row: i + 2, message: r.error.issues[0].message });
+		} else {
+			valid.push({ ...r.data, status: 'active' as const });
+		}
+	}
+
+	if (valid.length === 0 && errors.length > 0) {
+		return fail(400, { error: 'No valid rows found in CSV', errors });
+	}
 
 	if (mode === 'replace') await db.delete(schema.customers);
 
-	const values = rows
-		.map((row) => ({
-			name: row['name'] || row['Company name'] || '',
-			email: row['email'] || row['Email'] || null,
-			tel: row['tel'] || row['Phone'] || null,
-			fax: row['fax'] || row['Fax'] || null,
-			zipcode: row['zipcode'] || row['Zip'] || null,
-			address: row['address'] || row['Address'] || null,
-			status: 'active' as const
-		}))
-		.filter((v) => v.name);
+	if (valid.length > 0) {
+		await db.insert(schema.customers).values(valid);
+	}
 
-	if (values.length === 0) return fail(400, { error: 'No valid rows found in CSV' });
-
-	await db.insert(schema.customers).values(values);
 	await writeAuditLog({
 		db: env.DB,
 		account_id: user.id,
 		action: 'import',
 		resource_type: 'customer',
-		metadata: { count: values.length, mode },
+		metadata: { count: valid.length, skipped: errors.length, mode },
 		request
 	});
-	return { success: true };
+
+	return {
+		success: true,
+		imported: valid.length,
+		skipped: errors.length,
+		errors: errors.slice(0, 20)
+	};
 }
 
 export async function createActivity(ctx: ServiceCtx, customerId: string, data: unknown) {

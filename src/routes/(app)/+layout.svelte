@@ -6,6 +6,7 @@
 	import {
 		LayoutDashboard,
 		Users,
+		CalendarDays,
 		FolderKanban,
 		CheckSquare,
 		AppWindow,
@@ -27,6 +28,7 @@
 	const primaryNavItems = $derived<NavItem[]>([
 		{ href: '/', label: t().nav.dashboard, icon: LayoutDashboard },
 		{ href: '/customers', label: t().nav.customers, icon: Users },
+		{ href: '/schedules', label: t().nav.schedules, icon: CalendarDays },
 		{ href: '/projects', label: t().nav.projects, icon: FolderKanban },
 		{ href: '/workflows', label: t().nav.workflows, icon: CheckSquare },
 		{ href: '/apps', label: t().nav.apps, icon: AppWindow },
