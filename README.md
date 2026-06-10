@@ -23,7 +23,7 @@ Open-source integrated business management platform built on Cloudflare's infras
 
 | Layer | Technology |
 |---|---|
-| Framework | SvelteKit 5 (Svelte Runes) |
+| Framework | SvelteKit |
 | Runtime | Cloudflare Workers |
 | Database | Cloudflare D1 (SQLite) |
 | File storage | Cloudflare R2 |
